@@ -46,6 +46,8 @@ class TestLoops(unittest.TestCase):
                 miss.append(key)
 
         miss.sort()
+        # input(miss)
+        # input(self.parameters)
         message = "{} must have {} keys".format(
             self.parameters.__str__(), ','.join(miss))
         self.assertRaisesRegex(KeyError, message,
@@ -62,8 +64,9 @@ class TestLoops(unittest.TestCase):
         loops = Loops(parameters)
         Temperature = 1.0
         l_rg = 1.0
-        loops.initialize(Temperature=Temperature)
-        loops(l_rg)
+        # loops.initialize(Temperature=Temperature)
+        # loops(l_rg)
+        loops.initialize(Temperature=Temperature)(l_rg)
         a = (np.sum(loops.Cooper), np.sum(loops.Peierls),
              np.sum(loops.Peierls_susc))
         b = (878.6685890125864, 878.5183879970207, 1.7964371318299874)
@@ -73,6 +76,7 @@ class TestLoops(unittest.TestCase):
 
         Temperature = 10.0
         l_rg = 10.0
+        loops.loops_integration_donne = False
         loops.initialize(Temperature=Temperature)
         loops(l_rg)
         a = (np.sum(loops.Cooper), np.sum(
@@ -84,15 +88,16 @@ class TestLoops(unittest.TestCase):
         Temperature = 1e-10
         l_rg = 10.0
         loops.initialize(Temperature=Temperature)
+        loops.loops_integration_donne = False
         loops(l_rg)
         a = (np.sum(loops.Cooper), np.sum(
             loops.Peierls), np.sum(loops.Peierls_susc))
         b = (37.949254425810715, 8.986533868805642, 0.015657680353671738)
         self.assertEqual(a, b)
-        # input(loops.param)
 
         l_rg = 20.0
         loops.initialize()
+        loops.loops_integration_donne = False
         loops(l_rg)
         a = (np.sum(loops.Cooper), np.sum(
             loops.Peierls), np.sum(loops.Peierls_susc))
@@ -104,12 +109,12 @@ class TestLoops(unittest.TestCase):
 
         l_rg = 20.0
         loops.initialize(tp=0.0, tp2=0.0, Np=8)
+        loops.loops_integration_donne = False
         loops(l_rg)
         a = (np.sum(loops.Cooper), np.sum(
             loops.Peierls))
-        # input(loops.param)
-        # print(a)
-        b = (parameters["Np"]**2, parameters["Np"]**2)
+        Np = loops.param["Np"]
+        b = (Np**2, Np**2)
         self.assertEqual(loops.Temperature, 1e-80)
         for i, j in zip(a, b):
             self.assertAlmostEqual(i, j)

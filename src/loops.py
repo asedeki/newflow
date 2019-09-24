@@ -1,67 +1,94 @@
-import numpy as np
 
-import calculbulles as cb
+import numpy as np
+import difflib
+try:
+    import LoopsIntegration as cb
+except Exception:
+    import os
+    import sys
+    path = os.getcwd().split("/")
+    path = "/".join(path[:path.index("newflow")+1])
+    sys.path.append(path)
+    import lib.LoopsIntegration as cb
+
 
 # import pstats
 # import cProfile
 
+def best_match_key(parameters: dict, loops_dict):
+    best_keys = {
+        difflib.get_close_matches(key, loops_dict, n=1)[0]: v
+        for key, v in parameters.items()
+    }
+    return best_keys
+
 
 class Loops():
     __KEYS = set(["Np", "tp2", "tp", "Ef"])
+    _instance = None
+    loops_integration_donne = False
+    Temperature = 1e-80
 
-    def __init__(self, parameters):
-        parameter_keys = set(parameters.keys())
-        miss = []
-        for pa in Loops.__KEYS:
-            if pa not in parameter_keys:
-                miss.append(pa)
+    # def __new__(cls, *vargs, **kwargs):
+    #     if cls._instance is None:
+    #         cls._instance = super(Loops, cls).__new__(cls)
+    #     return cls._instance
+
+    def __init__(self, parameters: dict) -> None:
+        try:
+            Temp = difflib.get_close_matches("T", parameters, n=1)[0]
+            self.Temperature = float(parameters[Temp])
+        except Exception:
+            pass
+
+        matched_parameters = best_match_key(
+            parameters, Loops.__KEYS
+        )
+        miss = [pa for pa in Loops.__KEYS if pa not in matched_parameters]
         miss.sort()
-        if Loops.__KEYS.issubset(parameter_keys):
-            self.param = parameters
+        if not miss:
+            self.param = matched_parameters
         else:
             message = "{} must have {} keys".format(
                 parameters.__repr__(), ','.join(miss))
             raise KeyError(message)
-        try:
-            Np = int(self.param["Np"])
-        except KeyError:
-            Np = int(self.param["N_patche"])
 
-        if "T" in self.param:
-            self.Temperature = float(self.param["T"])
-
-        try:
-            self.Temperature = float(self.param["Temperature"])
-        except KeyError:
-            self.param["Temperature"] = 1e-80
-        finally:
-            self.Temperature = 1e-80
-
-        for k in parameter_keys:
-            if k not in Loops.__KEYS and not k.startswith("T"):
-                del self.param[k]
+        Np = int(self.param["Np"])
+        self.param["Temperature"] = self.Temperature
 
         self.Cooper = np.zeros((Np, Np, Np), float)
         self.Peierls = np.zeros((Np, Np, Np), float)
         self.Peierls_susc = np.zeros((Np, 2), float)
 
-    def initialize(self, Temperature=1e-80, **kwargs):
+    def initialize(self, **kwargs: dict) -> object:
         '''
             Set Loops values to null.
 
         '''
-        self.Temperature = Temperature
-        for key, value in kwargs.items():
-            self.param[key] = value
+        if kwargs is not None:
+            if "Temperature" in kwargs:
+                self.Temperature = kwargs["Temperature"]
+            else:
+                self.Temperature = Loops.Temperature
 
+            for key, value in kwargs.items():
+                if key in self.param:
+                    self.param[key] = value
+        self.param["Temperature"] = self.Temperature
         self.Cooper = np.zeros(self.Cooper.shape, float)
         self.Peierls = np.zeros(self.Peierls.shape, float)
         self.Peierls_susc = np.zeros(self.Peierls_susc.shape, float)
+        return self
 
     def get_values(self, l_rg: float):
 
-        cb.valeursbulles(l_rg, self.Temperature, self.param, self.Cooper,
-                         self.Peierls, self.Peierls_susc)
+        # cb.loops_integration(l_rg, self.Temperature, self.param, self.Cooper,
+        #                      self.Peierls, self.Peierls_susc)
+        self.param["lrg"] = l_rg
+        cb.loops_integration(
+            l_rg, self.param, self.Cooper, self.Peierls, self.Peierls_susc
+        )
+        del self.param["lrg"]
 
     def __call__(self, l_rg: float):
         '''
@@ -72,11 +99,12 @@ class Loops():
 
         '''
         try:
-            self.param["Temperature"] = self.Temperature
-
-            cb.valeursbulles(l_rg, self.Temperature, self.param, self.Cooper,
-                             self.Peierls, self.Peierls_susc)
-            del self.param["Temperature"]
+            self.param["lrg"] = l_rg
+            cb.loops_integration(
+                self.param, self.Cooper,
+                self.Peierls, self.Peierls_susc
+            )
+            del self.param["lrg"]
         except Exception as identifier:
             print(identifier)
             return False
