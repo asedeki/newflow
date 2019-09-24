@@ -14,7 +14,6 @@ tata
 Makefile
 *.npz
 *.c
-test_*.py
 lib/
 tmp/
 tobeluga.py
