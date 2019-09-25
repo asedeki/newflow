@@ -1,8 +1,11 @@
 
-import numpy as np
 import difflib
+
+import numpy as np
+
 try:
     import LoopsIntegration as cb
+    from utils import best_match_dict
 except Exception:
     import os
     import sys
@@ -10,29 +13,19 @@ except Exception:
     path = "/".join(path[:path.index("newflow")+1])
     sys.path.append(path)
     import lib.LoopsIntegration as cb
+    from src.utils import best_match_dict
 
 
 # import pstats
 # import cProfile
 
-def best_match_key(parameters: dict, loops_dict):
-    best_keys = {
-        difflib.get_close_matches(key, loops_dict, n=1)[0]: v
-        for key, v in parameters.items()
-    }
-    return best_keys
-
 
 class Loops():
     __KEYS = set(["Np", "tp2", "tp", "Ef"])
-    _instance = None
-    loops_integration_donne = False
+    __KEYS_INT = set(["Temperature", "lrg"])
     Temperature = 1e-80
-
-    # def __new__(cls, *vargs, **kwargs):
-    #     if cls._instance is None:
-    #         cls._instance = super(Loops, cls).__new__(cls)
-    #     return cls._instance
+    parameters = {k: None for k in __KEYS}
+    parameters.update({k: None for k in __KEYS_INT})
 
     def __init__(self, parameters: dict) -> None:
         try:
@@ -41,7 +34,7 @@ class Loops():
         except Exception:
             pass
 
-        matched_parameters = best_match_key(
+        matched_parameters = best_match_dict(
             parameters, Loops.__KEYS
         )
         miss = [pa for pa in Loops.__KEYS if pa not in matched_parameters]
@@ -68,12 +61,15 @@ class Loops():
         if kwargs is not None:
             if "Temperature" in kwargs:
                 self.Temperature = kwargs["Temperature"]
+                del kwargs["Temperature"]
             else:
                 self.Temperature = Loops.Temperature
-
-            for key, value in kwargs.items():
-                if key in self.param:
-                    self.param[key] = value
+            if kwargs:
+                dic = best_match_dict(
+                    kwargs, Loops.__KEYS
+                )
+                # input(f"dic = {dic}")
+                self.param.update(dic)
         self.param["Temperature"] = self.Temperature
         self.Cooper = np.zeros(self.Cooper.shape, float)
         self.Peierls = np.zeros(self.Peierls.shape, float)
@@ -86,7 +82,7 @@ class Loops():
         #                      self.Peierls, self.Peierls_susc)
         self.param["lrg"] = l_rg
         cb.loops_integration(
-            l_rg, self.param, self.Cooper, self.Peierls, self.Peierls_susc
+            self.param, self.Cooper, self.Peierls, self.Peierls_susc
         )
         del self.param["lrg"]
 
@@ -110,5 +106,3 @@ class Loops():
             return False
         else:
             return True
-
-        return True

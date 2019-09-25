@@ -8,7 +8,7 @@ try:
     from ..src.loops import Loops
 except ImportError:
     python_path = pathlib.posixpath.abspath("..")
-    # input(python_path)
+    # # input(python_path)
     sys.path.append(python_path)
     from src.loops import Loops
 except ValueError:
@@ -46,8 +46,8 @@ class TestLoops(unittest.TestCase):
                 miss.append(key)
 
         miss.sort()
-        # input(miss)
-        # input(self.parameters)
+        # # input(miss)
+        # # input(self.parameters)
         message = "{} must have {} keys".format(
             self.parameters.__str__(), ','.join(miss))
         self.assertRaisesRegex(KeyError, message,
@@ -61,6 +61,7 @@ class TestLoops(unittest.TestCase):
 
     def test_call(self):
         parameters = {"tp": 200, "tp2": 20, "Ef": 3000, "Np": 32}
+        # input(parameters)
         loops = Loops(parameters)
         Temperature = 1.0
         l_rg = 1.0
@@ -72,7 +73,7 @@ class TestLoops(unittest.TestCase):
         b = (878.6685890125864, 878.5183879970207, 1.7964371318299874)
 
         self.assertEqual(a, b)
-        # input(loops.param)
+        # # input(loops.param)
 
         Temperature = 10.0
         l_rg = 10.0
@@ -83,7 +84,7 @@ class TestLoops(unittest.TestCase):
             loops.Peierls), np.sum(loops.Peierls_susc))
         b = (2.5118151628507546, 2.6610631305629457, 0.007343458492368056)
         self.assertEqual(a, b)
-        # input(loops.param)
+        # # input(loops.param)
 
         Temperature = 1e-10
         l_rg = 10.0
@@ -101,7 +102,7 @@ class TestLoops(unittest.TestCase):
         loops(l_rg)
         a = (np.sum(loops.Cooper), np.sum(
             loops.Peierls), np.sum(loops.Peierls_susc))
-        # input(loops.param)
+        # # input(loops.param)
         # print(a)
         b = (32.00127317596035, 0.0065097990057401195, 1.7901397210660127e-06)
         self.assertEqual(loops.Temperature, 1e-80)
