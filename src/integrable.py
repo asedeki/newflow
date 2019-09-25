@@ -25,7 +25,7 @@ class Integrable(ABC):
         pass
 
     @abstractmethod
-    def initpack(self, *vargs) -> np.ndarray:
+    def initpack(self) -> np.ndarray:
         pass
 
     @abstractmethod
