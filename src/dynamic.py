@@ -12,12 +12,12 @@ else:
     path = "/".join(path.append("newflow"))
 try:
     from integrable import Integrable
-    from dynamicalsystem import DynamicalSystem
+    from integrablesystem import IntegrableSystem
 
 except Exception:
     sys.path.append(path)
     from src.integrable import Integrable
-    from src.dynamicalsystem import DynamicalSystem
+    from src.integrablesystem import IntegrableSystem
 
 
 class Dynamic():
@@ -35,12 +35,16 @@ class Dynamic():
         self.rtol = rel_tol
         self.ode_method = ode_method
 
-    def get_integrator(self, dynamical_system: DynamicalSystem,
+    def get_integrator(self, dynamical_system: IntegrableSystem,
                        **kwargs):
         self.set_dynamical_system(dynamical_system)
         self.initialize(**kwargs)
         self.__get_integrator()
         return self
+
+    def __get_init_value(self) -> np.ndarray:
+        y = self.dynamical_sytem.initpack()
+        return y
 
     def __get_integrator(self):
         def rg(l, y):
@@ -48,40 +52,36 @@ class Dynamic():
             return dy
         self.ode_integrator = ode(rg).set_integrator(
             self.ode_method, rtol=self.rtol)
+        # self.ode_integrator.set_f_params(9)
 
-    def set_dynamical_system(self, dynamical_sytem: DynamicalSystem):
-        # for system in dynamical_sytem:
-        #     if not (isinstance(system, Integrable)):
-        #         raise TypeError(
-        #             f"{system} must be a <class 'Integrable'> object."
-        #         )
-        self.dynamical_sytem = dynamical_sytem
+    def set_dynamical_system(self,
+                             dynamical_system: Integrable) -> None:
+
+        if not (isinstance(dynamical_system, Integrable)):
+            raise TypeError
+        (
+            f"{dynamical_system} must be a <class 'Integrable'> object."
+        )
+        self.dynamical_sytem = dynamical_system
 
     def initialize(self, **kwargs):
         self.dynamical_sytem.initialize(**kwargs)
 
-    def __get_init_value(self) -> np.ndarray:
-        y = self.dynamical_sytem.initpack()
-        return y
-
     def unpack(self, y: np.array) -> None:
         self.dynamical_sytem.unpack(y)
 
-    def __derivative(self, y: np.ndarray, lflow: float) -> np.ndarray:
-        dy = self.dynamical_sytem.rg_equations(y=y, lflow=lflow)
+    def __derivative(self, y: np.ndarray,
+                     lflow: float) -> np.ndarray:
+        dy = self.dynamical_sytem.rg_equations(
+            y=y, lflow=lflow
+        )
+
         return dy
 
     def next_value(self, l_ini: float = 0.0,
                    l_next: float = 100.0,
                    **kwargs: dict) -> bool:
-        # Avoir si self.ode_integrator marche ou pas
-        # def rg(l, y):
-        #     dy = self.__derivative(y, l)
-        #     return dy
-        # ode_integrator = ode(rg).set_integrator(
-        #     self.ode_method, rtol=self.rtol)
 
-        # ode_integrator.set_f_params(9)
         y0 = self.__get_init_value()
         self.ode_integrator.set_initial_value(y0, l_ini)
         with warnings.catch_warnings():
