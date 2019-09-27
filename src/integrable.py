@@ -10,7 +10,7 @@ class Goology():
 
     def __new__(cls, *vargs, **kwargs):
         if cls._instance is None:
-            cls._instance = super(Goology, cls).__new__(cls, *vargs, **kwargs)
+            cls._instance = super(Goology, cls).__new__(cls)
         return cls._instance
 
 
@@ -19,6 +19,17 @@ class Integrable(ABC):
 
     def __init__(self):
         super().__init__()
+
+    @classmethod
+    def get_functions(self):
+        print("""
+            The abstractmethods of the Integrale class are:
+            - initialize
+            - pack
+            - unpack
+            - inipack
+            - rg_equtions 
+        """)
 
     @abstractmethod
     def initialize(self, **kwargs):
@@ -39,3 +50,11 @@ class Integrable(ABC):
     @abstractmethod
     def rg_equations(self, *vargs, **kwargs):
         pass
+
+
+if __name__ == "__main__":
+    # Integrable.get_functions()
+    g = Goology()
+    print(id(g))
+    g2 = Goology()
+    print(id(g2))

@@ -2,19 +2,19 @@ import unittest
 import sys
 import pathlib
 import numpy as np
+import os
 from random import choice, randint
+path = os.getcwd().split("/")
+if "newflow" in path:
+    path = "/".join(path[:path.index("newflow")+1])
+else:
+    path = "/".join(path.append("newflow"))
 
 try:
-    from ..src.loops import Loops
+    from loops import Loops
 except ImportError:
-    python_path = pathlib.posixpath.abspath("..")
-    # # # input(python_path)
-    sys.path.append(python_path)
+    sys.path.append(path)
     from src.loops import Loops
-except ValueError:
-    python_path = pathlib.posixpath.abspath(".")
-    sys.path.append(python_path)
-    from newflow.src.loops import Loops
 
 
 class TestLoops(unittest.TestCase):
@@ -29,13 +29,10 @@ class TestLoops(unittest.TestCase):
             "tp": 200, "tp2": 20,
             "Ef": 3000, "Np": 32
         }
-        self.loops = Loops()
+        self.loops = Loops(self.parameters)
 
     def tearDown(self):
-        p = Loops()
-        # input(f"self_para = {self.parameters}")
-        p.initialize(**self.parameters)
-        # input(p.parameters)
+        pass
 
     def test_init(self):
         keys = ["tp", "tp2", "Ef"]
@@ -69,22 +66,18 @@ class TestLoops(unittest.TestCase):
 
     def test_call(self):
         parameters = {"tp": 200, "tp2": 20, "Ef": 3000, "Np": 32}
-        # # input(parameters)
         Temperature = 1.0
         l_rg = 1.0
-        # loops.initialize(Temperature=Temperature)
-        # loops(l_rg)
         self.loops.initialize(**parameters,
                               Temperature=Temperature,
                               lrg=l_rg)
         self.loops()
-        # input(self.loops.parameters)
         a = (np.sum(self.loops.Cooper), np.sum(self.loops.Peierls),
              np.sum(self.loops.Peierls_susc))
         b = (878.6685890125864, 878.5183879970207, 1.7964371318299874)
 
         self.assertEqual(a, b)
-        # # # input(loops.parameters)
+        # # # # input(loops.parameters)
         loops = self.loops
         Temperature = 10.0
         l_rg = 10.0
@@ -94,12 +87,12 @@ class TestLoops(unittest.TestCase):
             loops.Peierls), np.sum(loops.Peierls_susc))
         b = (2.5118151628507546, 2.6610631305629457, 0.007343458492368056)
         self.assertEqual(a, b)
-        # # # input(loops.parameters)
 
+        loops = self.loops
         Temperature = 1e-10
         l_rg = 10.0
-        loops.initialize(Temperature=Temperature)
-        loops(l_rg)
+        self.loops.initialize(Temperature=Temperature)
+        self.loops(l_rg)
         a = (np.sum(loops.Cooper), np.sum(
             loops.Peierls), np.sum(loops.Peierls_susc))
         b = (37.949254425810715, 8.986533868805642, 0.015657680353671738)
@@ -118,7 +111,7 @@ class TestLoops(unittest.TestCase):
         self.assertEqual(a, b)
 
         l_rg = 20.0
-        loops.get_values(tp=0.0, tp2=0.0, Np=8, lrg=l_rg)
+        loops.get_values(tp=0.0, tp2=0.0, Np=16, lrg=l_rg)
         a = (np.sum(loops.Cooper), np.sum(
             loops.Peierls))
         Np = loops.parameters["Np"]

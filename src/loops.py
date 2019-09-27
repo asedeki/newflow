@@ -1,6 +1,5 @@
 
 import difflib
-
 import numpy as np
 
 try:
@@ -18,6 +17,7 @@ except Exception:
 
 # import pstats
 # import cProfile
+# TODO: rajouter jil a la class Dynamical
 
 
 class Loops():
@@ -26,7 +26,7 @@ class Loops():
         instance.__init()
         return instance
 
-    @classmethod
+    # @classmethod
     def __init(cls):
         cls.__KEYS = set(["Np", "tp2", "tp", "Ef"])
         cls.__KEYS_INT = set(["Temperature", "lrg"])
@@ -38,14 +38,19 @@ class Loops():
         cls.Cooper = None
         cls.Peierls = None
         cls.Peierls_susc = None
+        cls.loops_donne = False
 
     def __init__(self, parameters: dict = None) -> None:
 
         if parameters is not None:
             matched_parameters = best_match_dict(
-                parameters, Loops.__KEYS.union(Loops.__KEYS_INT)
+                parameters, self._Loops__KEYS.union(
+                    self._Loops__KEYS_INT
+                )
             )
-            miss = [pa for pa in Loops.__KEYS if pa not in matched_parameters]
+            miss = [
+                pa for pa in self._Loops__KEYS if pa not in matched_parameters
+            ]
             miss.sort()
             # # input(f"before = {self.parameters}")
             # # input(f"match = {matched_parameters}")
@@ -73,13 +78,24 @@ class Loops():
             # # # input(f"dic = {dic}")
             self.parameters.update(dic)
         # input(f"param_in_intialize = {self.parameters}")
+        self._assert_parameters_not_none()
+
         self.Temperature = self.parameters["Temperature"]
-        assert(self.parameters["Np"] is not None)
         shape = (self.parameters["Np"], self.parameters["Np"],
                  self.parameters["Np"])
         self.Cooper = np.zeros(shape, float)
         self.Peierls = np.zeros(shape, float)
         self.Peierls_susc = np.zeros((self.parameters["Np"], 2), float)
+
+    def _assert_parameters_not_none(self):
+        _none_param = []
+        for p, v in self.parameters.items():
+            if v is None and p != "lrg":
+                _none_param.append(p)
+        if _none_param:
+            raise ValueError(
+                f"Loop's ({','.join(_none_param)}) parameters must be given."
+            )
 
     def get_values(self, **kwargs: dict):
 
@@ -99,7 +115,7 @@ class Loops():
         if l_rg is not None:
             self.parameters["lrg"] = l_rg
         try:
-            cb.loops_integration(
+            self.loops_donne = cb.loops_integration(
                 self.parameters, self.Cooper,
                 self.Peierls, self.Peierls_susc
             )

@@ -35,7 +35,7 @@ class Dynamic():
         self.rtol = rel_tol
         self.ode_method = ode_method
 
-    def get_integrator(self, dynamical_system: IntegrableSystem,
+    def get_integrator(self, dynamical_system: Integrable,
                        **kwargs):
         self.set_dynamical_system(dynamical_system)
         self.dynamical_sytem.initialize(**kwargs)
@@ -58,6 +58,7 @@ class Dynamic():
                              dynamical_system: Integrable) -> None:
 
         if not (isinstance(dynamical_system, Integrable)):
+            print(f"{dynamical_system} must be a <class 'Integrable'> object.")
             raise TypeError
         (
             f"{dynamical_system} must be a <class 'Integrable'> object."

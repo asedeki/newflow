@@ -20,105 +20,73 @@ except ModuleNotFoundError:
     from src.loops import Loops
 
 
-class IntegrableQuasi1dSystem:
-    def __init__(self, parameters: dict):
-        self.parameters = parameters
+class IntegrableQuasi1dSystem(Integrable):
+    def __init__(self):
         self.interaction = None
-        self.susceptibilities = {}
-        self.susc_types = None
+        self.susceptibilities = None
         self.loops = None
+        self.Neq = None
 
-    def set_all(self):
-        self.set_loops()
-        self.set_interaction()
-        self.susceptibilities = Susceptibilities().append_all()
-
+    def set_all(self, parameters: dict, susc_name: str = None):
+        self.parameters = parameters
+        self.interaction = Interaction(parameters)
+        self.susceptibilities = Susceptibilities().append_all(susc_name)
+        self.loops = Loops(parameters)
+        self.Neq = self.interaction.Neq
+        for s in self.susceptibilities.susceptibilities:
+            self.Neq += s.dim1*(parameters["Np"]+1)
         return self
 
-    def resset_parameters(self, **kwargs):
-        for key, v in kwargs.items():
-            if hasattr(self.parameters, key):
-                self.parameters[key] = v
+    def set_interaction(self, g: Interaction):
+        if not (isinstance(g, Interaction)):
+            raise TypeError(
+                f"{g} must be a <class 'Interaction'>"
+            )
+        self.interaction = g
 
-    def set_interaction(self, g: Interaction = None):
-        if g is not None:
-            if not (isinstance(g, Integrable)):
-                raise TypeError(
-                    f"{g} must be a <class 'Integrable'> object."
-                )
-            self.interaction = g
-        else:
-            self.interaction = Interaction(self.parameters)
+    def set_susceptibilities(self, susceptibilities: Susceptibilities):
+        if not (isinstance(susceptibilities, Susceptibilities)):
+            raise TypeError(
+                f"{susceptibilities} must be a <class Susceptibilities>."
+            )
+        self.susceptibilities = susceptibilities
 
-    def get_susceptibilities_by_name(self, type_name: str):
-        if isinstance(type_name, str):
-            susc_types = type_name.split(" ")
-            # # input(f"susc = {susc_types}")
-
-            for name in susc_types:
-                try:
-                    s = Susceptibility(self.parameters)
-                    s.get_susceptibility_by_name(name)
-                    self.susceptibilities[name] = s
-                except Exception as e:
-                    input(f"{name}")
-                    raise Exception(e)
-
-        self.susc_types = list(self.susceptibilities.keys())
-        self.susc_types.sort()
-
-    def set_suscptibilities(self, susceptibilities: dict):
-        if isinstance(susceptibilities, dict):
-            self.susceptibilities = susceptibilities
-
-        self.susc_types = list(self.susceptibilities.keys())
-        self.susc_types.sort()
-
-    def set_loops(self, loops: Loops = None):
-        if loops is not None:
-            self.loops = loops
-        else:
-            self.loops = Loops(self.parameters)
+    def set_loops(self, loops: Loops):
+        if not (isinstance(loops, Loops)):
+            raise TypeError(
+                f"{loops} must be a <class Loops> object."
+            )
+        self.loops = loops
 
     def initialize(self, **kwargs):
         self.loops.initialize(**kwargs)
         self.interaction.initialize(**kwargs)
-        # # input(self.susceptibilities.values())
-        for susc in self.susceptibilities.values():
-            susc.initialize(**kwargs)
+        self.susceptibilities.initialize(Np=self.parameters["Np"])
 
-    def initpack(self, *vargs) -> np.ndarray:
-        y = self.interaction.initpack()
-        for susc_type in self.susc_types:
-            susc = self.susceptibilities[susc_type]
-            y = np.concatenate((y, susc.initpack()))
+    def initpack(self) -> np.ndarray:
+        y = np.concatenate(
+            (
+                self.interaction.initpack(),
+                self.susceptibilities.initpack()
+            )
+        )
         return y
 
     def pack(self, *vargs) -> np.ndarray:
         pass
 
     def unpack(self, y: np.ndarray) -> None:
-        index_ini = 0
-        index_final = self.interaction.Neq
-        self.interaction.unpack(y[index_ini:index_final])
-        index_ini = index_final
-        for susc_type in self.susc_types:
-            susc = self.susceptibilities[susc_type]
-            index_final += susc.Neq
-            susc.unpack(y[index_ini:index_final])
-            index_ini += susc.Neq
+        self.interaction.unpack(y[:self.interaction.Neq])
+        self.susceptibilities.unpack(y[self.interaction.Neq:])
 
-    def rg_equations(self, y: np.ndarray, lflow: float) -> np.ndarray:
+    def rg_equations(self, lflow: float) -> np.ndarray:
         self.loops(l_rg=lflow)
+        # input(f"T_loops={self.loops.Temperature}")
         dy = self.interaction.rg_equations(loops=self.loops)
-        for susc_type in self.susc_types:
-            susc = self.susceptibilities[susc_type]
-            dy = np.concatenate(
-                (dy, susc.rg_equations(
-                    self.loops, self.interaction
-                )
-                )
-            )
+        dy = np.concatenate(
+            (dy, self.susceptibilities.rg_equations(
+                self.loops, self.interaction))
+        )
         return dy
 
     def __iter__(self):
