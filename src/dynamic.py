@@ -38,7 +38,7 @@ class Dynamic():
     def get_integrator(self, dynamical_system: IntegrableSystem,
                        **kwargs):
         self.set_dynamical_system(dynamical_system)
-        self.initialize(**kwargs)
+        self.dynamical_sytem.initialize(**kwargs)
         self.__get_integrator()
         return self
 
@@ -64,17 +64,10 @@ class Dynamic():
         )
         self.dynamical_sytem = dynamical_system
 
-    def initialize(self, **kwargs):
-        self.dynamical_sytem.initialize(**kwargs)
-
-    def unpack(self, y: np.array) -> None:
-        self.dynamical_sytem.unpack(y)
-
     def __derivative(self, y: np.ndarray,
                      lflow: float) -> np.ndarray:
-        dy = self.dynamical_sytem.rg_equations(
-            y=y, lflow=lflow
-        )
+        self.dynamical_sytem.unpack(y)
+        dy = self.dynamical_sytem.rg_equations(lflow=lflow)
 
         return dy
 
@@ -84,11 +77,13 @@ class Dynamic():
 
         y0 = self.__get_init_value()
         self.ode_integrator.set_initial_value(y0, l_ini)
+
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
             self.ode_integrator.integrate(l_next)
         if (self.ode_integrator.successful()):
-            self.unpack(self.ode_integrator.y)
+            self.dynamical_sytem.unpack(self.ode_integrator.y)
+
         return self.ode_integrator.successful()
 
     def evolutionl(self, li, lf):
@@ -100,7 +95,7 @@ class Dynamic():
         with warnings.catch_warnings():
             sol = solve_ivp(rg, l_rg, y0, t_eval=[li, lf])
             if (sol.success):
-                self.unpack(sol.y[:, -1])
+                self.dynamical_sytem.unpack(sol.y[:, -1])
                 return True
             else:
                 # print(sol.message)

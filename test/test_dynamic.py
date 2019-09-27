@@ -2,13 +2,19 @@ import unittest
 import sys
 import pathlib
 import numpy as np
+import os
 # from random import choice, randint
+path = os.getcwd().split("/")
+if "newflow" in path:
+    path = "/".join(path[:path.index("newflow")+1])
+else:
+    path = "/".join(path.append("newflow"))
 
 try:
-    from ..src.loops import Loops
-    from ..src.integrable import Integrable
-    from ..src.dynamic import Dynamic
-    from ..src.integrablesystem import IntegrableSystem
+    from loops import Loops
+    from integrable import Integrable
+    from dynamic import Dynamic
+    from integrablesystem import IntegrableSystem
 except ImportError:
     python_path = pathlib.posixpath.abspath("..")
     # # input(python_path)
@@ -17,13 +23,6 @@ except ImportError:
     from src.integrable import Integrable
     from src.dynamic import Dynamic
     from src.integrablesystem import IntegrableSystem
-except ValueError:
-    python_path = pathlib.posixpath.abspath(".")
-    sys.path.append(python_path)
-    from newflow.src.loops import Loops
-    from newflow.src.integrable import Integrable
-    from newflow.src.dynamic import Dynamic
-    from newflow.src.integrablesystem import IntegrableSystem
 
 
 class Intg(Integrable):
@@ -45,82 +44,52 @@ class Intg(Integrable):
     def unpack(self, y):
         self.y = y
 
-    def rg_equations(self, y: np.ndarray, lflow: float):
-        self.unpack(y)
-        dy0 = self.y[0]
-        dy1 = 1.0/self.y[1]
-        # # input(f"{dy0}, {dy1}")
+    def rg_equations(self, lflow: float = None):
+
+        dy1 = self.y[1]
+        dy0 = 1.0/self.y[0]/2.0
         return self.pack(dy0, dy1)
 
 
 class TestLoops(unittest.TestCase):
-    # def __init__(self):
-    #     self.integrable = Intg()
+    def test_integrator(self):
+        I1 = Intg(1, 1)
+        d = Dynamic(
+            rel_tol=1e-10).get_integrator(I1)
+        lf = 10
+        li = 0
+        for _ in range(20):
+            y0 = I1.y[0]
+            y1 = I1.y[1]
+            d.next_value(l_ini=li, l_next=lf)
+            #self.d.evolutionl(0, l)
+            # print(f"l_final, l_ini = {lf},{li}")
+            # print("_____________________________")
+            self.assertAlmostEqual(I1.y[1], y1*np.exp(lf-li), 4)
+            self.assertAlmostEqual(I1.y[0], np.sqrt(lf-li+y0**2), 4)
+            li = lf
+            lf += 0.4
 
-    @classmethod
-    def setUpClass(cls):
-        parameters = {
-            "tp": 200, "tp2": 20,
-            "Ef": 3000, "Np": 4
-        }
-        #loops = Loops(parameters)
+    def test_integrable_system(self):
         I1 = Intg(1, 1)
         I2 = Intg(2, 2)
-        cls.I1 = I1
-        # cls.dyn_sys = IntegrableSystem(parameters=parameters)
-        # cls.dyn_sys.set_interaction(I1)
-        # cls.dyn_sys.set_suscptibilities({"1": I1, "2": I2})
-        # cls.dyn_sys.set_loops(loops=loops)
-        # cls.d = Dynamic(
-        #     rel_tol=1e-3).get_integrator(cls.dyn_sys)
-        cls.d = Dynamic(
-            rel_tol=1e-3).get_integrator(I1)
-
-    @classmethod
-    def tearDownClass(cls):
-        pass
-
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        pass
-
-    def test_integrator(self):
-        lf = 1
+        S = IntegrableSystem()
+        S.add_integrable_system(I1, I2)
+        d = Dynamic(
+            rel_tol=1e-10).get_integrator(S)
+        lf = 10
         li = 0
-        for _ in range(1):
-            y0 = self.I1.y[0]
-            self.d.next_value(l_ini=li, l_next=lf)
+        for _ in range(20):
+            y0 = I2.y[0]
+            y1 = I2.y[1]
+            d.next_value(l_ini=li, l_next=lf)
             #self.d.evolutionl(0, l)
-            self.assertAlmostEqual(self.I1.y[0], y0*np.exp(lf-li))
+            # print(f"l_final, l_ini = {lf},{li}")
+            # print("_____________________________")
+            self.assertAlmostEqual(I2.y[1], y1*np.exp(lf-li), 4)
+            self.assertAlmostEqual(I2.y[0], np.sqrt(lf-li+y0**2), 4)
             li = lf
-            lf += 0.6
-    # def test_init(self):
-    #     self.d.initialize()
-    #     for intg_ in self.d.systems:
-    #         self.assertTrue(
-    #             np.all(intg_.loops.Cooper == Intg.loops.Cooper)
-    #         )
-    #         self.assertTrue(
-    #             np.all(intg_.loops.Peierls == Intg.loops.Peierls)
-    #         )
-    #         self.assertTrue(
-    #             np.all(intg_.loops.Peierls_susc == Intg.loops.Peierls_susc)
-    #         )
-
-    # def test_g(self):
-    #     parameters = {
-    #         "tp": 200, "tp2": 20,
-    #         "Ef": 3000, "Np": 4
-    #     }
-    #     loops = Loops(parameters)
-    #     loops.initialize(tp2=0.0, tp=0.0)
-    #     Integrable.loops = loops
-    #     I1 = Intg(1, 1)
-    #     I2 = Intg(2, 2)
-    #     print(I1.goology)
-    #     print(I2.goology)
+            lf += 0.4
 
 
 if __name__ == "__main__":
