@@ -13,6 +13,7 @@ tmp
 tata
 Makefile
 *.npz
+*.npy
 *.c
 lib/
 tmp/
