@@ -154,7 +154,7 @@ class Interaction(Integrable):
         '''
         if loops is None:
             loops = self.loops
-            loops(l_rg=lflow)
+            loops(lflow=lflow)
             # loops.loops_donne = False
         dg1 = np.zeros(self.ndim, float)
         dg2 = np.zeros(self.ndim, float)
@@ -186,7 +186,7 @@ class Interaction(Integrable):
         '''
         if loops is None:
             loops = self.loops
-            loops(l_rg=lflow)
+            loops(lflow=lflow)
 
         Np = self.parameters.Np
         dg1 = np.zeros(self.ndim, float)

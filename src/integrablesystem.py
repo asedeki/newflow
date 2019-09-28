@@ -31,7 +31,7 @@ class IntegrableQuasi1dSystem(Integrable):
         self.parameters = parameters
         self.interaction = Interaction(parameters)
         self.susceptibilities = Susceptibilities().append_all(susc_name)
-        self.loops = Loops(parameters)
+        self.loops = Loops(**parameters)
         self.Neq = self.interaction.Neq
         for s in self.susceptibilities.susceptibilities:
             self.Neq += s.dim1*(parameters["Np"]+1)
@@ -80,7 +80,7 @@ class IntegrableQuasi1dSystem(Integrable):
         self.susceptibilities.unpack(y[self.interaction.Neq:])
 
     def rg_equations(self, lflow: float) -> np.ndarray:
-        self.loops(l_rg=lflow)
+        self.loops(lflow=lflow)
         # input(f"T_loops={self.loops.Temperature}")
         dy = self.interaction.rg_equations(loops=self.loops)
         dy = np.concatenate(

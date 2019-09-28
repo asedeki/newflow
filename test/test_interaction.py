@@ -54,7 +54,7 @@ class TestInteraction(unittest.TestCase):
             "g1": 0.2, "g2": 0.64, "g3": 0.0
         }
         loops = Loops()
-        loops.initialize(**parameters)
+        loops.initialize(**parameters, Temperature=1e-80)
         int = Interaction(parameters)
         int.set_loops(loops)
         integrator = Dynamic(
