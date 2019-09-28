@@ -9,7 +9,7 @@ except Exception:
     import os
     import sys
     path = os.getcwd().split("/")
-    path = "/".join(path[:path.index("newflow")+1])
+    path = "/".join(path[:path.index("newflow") + 1])
     sys.path.append(path)
     import lib.LoopsIntegration as cb
     from src.utils import best_match_dict
@@ -21,49 +21,23 @@ except Exception:
 
 
 class Loops():
+    Cooper = None
+    Peierls = None
+    Peierls_susc = None
+    loops_donne = False
+    _params = ["Np", "tp2", "tp", "Ef",
+    "Temperature", "lflow"]
+    parameters = {k: None for k in _params}
+
     def __new__(cls, *args, **kwargs):
         instance = super(Loops, cls).__new__(cls)
-        instance.__init()
         return instance
 
-    # @classmethod
-    def __init(cls):
-        cls.__KEYS = set(["Np", "tp2", "tp", "Ef"])
-        cls.__KEYS_INT = set(["Temperature", "lrg"])
-        cls.Temperature = None
-
-        cls.parameters = {k: None for k in cls.__KEYS}
-        cls.parameters["lrg"] = None
-        cls.parameters["Temperature"] = 1e-80
-        cls.Cooper = None
-        cls.Peierls = None
-        cls.Peierls_susc = None
-        cls.loops_donne = False
-
-    def __init__(self, parameters: dict = None) -> None:
-
+    def __init__(self, **parameters: dict) -> None:
         if parameters is not None:
-            matched_parameters = best_match_dict(
-                parameters, self._Loops__KEYS.union(
-                    self._Loops__KEYS_INT
-                )
+            self.parameters.update(
+                best_match_dict(parameters, self._params)
             )
-            miss = [
-                pa for pa in self._Loops__KEYS if pa not in matched_parameters
-            ]
-            miss.sort()
-            # # input(f"before = {self.parameters}")
-            # # input(f"match = {matched_parameters}")
-            self.parameters.update(matched_parameters)
-            # # input(f"after = {self.parameters}")
-
-            if miss:
-                message = "{} must have {} keys".format(
-                    parameters.__repr__(), ','.join(miss))
-                raise KeyError(message)
-
-            Np = int(self.parameters["Np"])
-            self.Temperature = self.parameters["Temperature"]
 
     def initialize(self, **kwargs: dict) -> None:
         '''
@@ -72,15 +46,12 @@ class Loops():
         '''
 
         if kwargs:
-            dic = best_match_dict(
-                kwargs, set(self.parameters.keys())
+            self.parameters.update(
+                best_match_dict(kwargs, self._params)
             )
-            # # # input(f"dic = {dic}")
-            self.parameters.update(dic)
         # input(f"param_in_intialize = {self.parameters}")
         self._assert_parameters_not_none()
 
-        self.Temperature = self.parameters["Temperature"]
         shape = (self.parameters["Np"], self.parameters["Np"],
                  self.parameters["Np"])
         self.Cooper = np.zeros(shape, float)
@@ -89,8 +60,8 @@ class Loops():
 
     def _assert_parameters_not_none(self):
         _none_param = []
-        for p, v in self.parameters.items():
-            if v is None and p != "lrg":
+        for p in self.parameters:
+            if self.parameters[p] is None and p != "lflow":
                 _none_param.append(p)
         if _none_param:
             raise ValueError(
@@ -104,7 +75,7 @@ class Loops():
         self.initialize(**kwargs)
         self.__call__()
 
-    def __call__(self, l_rg: float = None):
+    def __call__(self, lflow: float = None):
         '''
             Calculate the values of Cooper and Peierls loops
             for a given Temperature and RG_l parameterseter.
@@ -112,8 +83,8 @@ class Loops():
             to do integration for time considerations.
 
         '''
-        if l_rg is not None:
-            self.parameters["lrg"] = l_rg
+        if lflow is not None:
+            self.parameters["lflow"] = lflow
         try:
             self.loops_donne = cb.loops_integration(
                 self.parameters, self.Cooper,

@@ -4,13 +4,6 @@ from numba import jit, njit, gdb_init
 
 # import future.concurrent
 
-class Quasi1dParam:
-    def __init__(self, keys: list, parameters: dict):
-        for k in keys:
-            self.__dict__[k] = parametres["k"]
-    def __getitem__(self, k):
-        return self.__dict__[k]
-
 def best_match_dict(parameters: dict, match_param_keys) -> dict:
     _best_match_dict = dict()
     for param in parameters.keys():
