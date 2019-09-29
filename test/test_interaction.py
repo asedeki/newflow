@@ -81,7 +81,6 @@ class TestInteraction(unittest.TestCase):
 
         tini = time.time()
         data = np.load("data_test_interaction.npy", allow_pickle=True)[()]
-
         parameters = data["param"]
         loops = Loops()
         loops.initialize(**parameters)
@@ -92,6 +91,7 @@ class TestInteraction(unittest.TestCase):
         
         li, lf = 0, 1
         integrator.next_value(l_ini=li, l_next=lf)
+        
         # data.update(
         #     {
         #         "param": parameters,
@@ -99,13 +99,15 @@ class TestInteraction(unittest.TestCase):
         #         lf:[int.g1, int.g2, int.g3]
         #         }
         #     )
+
         self.assertAlmostEqual(np.sum(int.g1)-np.sum(data[lf][0]),0, NN)
         self.assertAlmostEqual(np.sum(int.g2)-np.sum(data[lf][1]),0, NN)
         self.assertAlmostEqual(np.sum(int.g3)-np.sum(data[lf][2]),0, NN)
         print(np.sum(int.g3)-np.sum(data[lf][2]))
         print(data["time"])
-        #np.save("data_test_interaction.npy", data)
-# NN=8
+
+        # np.save("data_test_interaction.npy", data)
+NN=8
 
 if __name__ == "__main__":
     unittest.main()
