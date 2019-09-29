@@ -14,6 +14,7 @@ from collections import namedtuple
 import numpy as np
 from numba import jit
 
+
 path = os.getcwd().split("/")
 if "newflow" in path:
     path = "/".join(path[:path.index("newflow") + 1])
@@ -132,8 +133,16 @@ class Interaction(Integrable):
         self.g2 = y[self.Ng:2 * self.Ng].reshape(self.ndim)
         self.g3 = y[2 * self.Ng:3 * self.Ng].reshape(self.ndim)
 
-    def rg_equations(self, loops: Loops = None, lflow: float=0):
-        '''
+    def rg_equations(self, loops: Loops = None, lflow: float = 0):
+        """[summary]
+
+        Keyword Arguments:
+            loops {Loops} -- [description] (default: {None})
+            lflow {float} -- [description] (default: {0})
+
+        Returns:
+            [ndarray] -- [Contient les derivees de g1, g2, g3]
+
             It's a pure python function calculating
             the RG derivatives of the goology modele
             interactions. It's uses "numba.jil" to
@@ -151,7 +160,7 @@ class Interaction(Integrable):
                     Calculate the rg derivatives for the g1, g2, g3
                     goology interaction. The result is concatenated
                     in an numpy array via the pack function.
-        '''
+        """
         if loops is None:
             loops = self.loops
             loops(lflow=lflow)
@@ -162,105 +171,6 @@ class Interaction(Integrable):
         rg_equations_interaction(dg1, dg2, dg3,
                                  self.g1, self.g2, self.g3,
                                  loops.Peierls, loops.Cooper)
-        del loops
         return self.pack(dg1, dg2, dg3)
 
-    def rg_equations2(self, loops: Loops = None, lflow: float = 0):
-        '''
-            It's a pure python function calculating
-            the RG derivatives of the goology modele
-            interactions.
-            Parameters:
-            ---------------------------------------
-                loops: Loops class
-                    contains the values of the Cooper
-                    and Peierls loops values.
-
-            return:
-            ----------------------------------------
-                numpy array
-
-                    Calculate the rg derivatives for the g1, g2, g3
-                    goology interaction. The result is concatenated
-                    in an numpy array via the pack function.
-        '''
-        if loops is None:
-            loops = self.loops
-            loops(lflow=lflow)
-
-        Np = self.parameters.Np
-        dg1 = np.zeros(self.ndim, float)
-        dg2 = np.zeros(self.ndim, float)
-        dg3 = np.zeros(self.ndim, float)
-
-        N2 = Np // 2
-        # inds = (-N2, N2)
-        inds = (0, Np)
-        for k1 in range(inds[0], inds[1]):
-            for k2 in range(inds[0], inds[1]):
-                qc = (k1 + k2) % Np
-                for k3 in range(inds[0], inds[1]):
-                    qp = (k3 - k2) % Np
-                    qpp = (k1 - k3) % Np
-                    k4 = (k1 + k2 - k3) % Np
-                    i = (k1, k2, k3)
-
-                    for kp in range(inds[0], inds[1]):
-                        IP = loops.Peierls[k2, kp, qp]
-                        IP2 = loops.Peierls[k2, kp, -qp]
-                        IC = loops.Cooper[k1, kp, qc]
-                        IPP = loops.Peierls[k3, kp, qpp]
-
-                        m1 = (k1, k2, kp)
-                        m2 = (kp, (qc - kp) % Np, k3)
-                        m3 = (k1, (kp - qp) % Np, kp)
-                        m4 = (kp, k2, k3)
-                        m5 = (k1, kp, (kp + qp) % Np)
-                        m6 = (k2, (kp + qp) % Np, k3)
-                        m7 = (k2, (kp + qp) % Np, kp)
-                        m8 = ((kp + qp) % Np, k2, k3)
-                        m9 = (k2, (kp + qpp) % Np, kp)
-                        m10 = (k2, (kp + qpp) % Np, k4)
-                        m11 = (k1, kp, (kp + qpp) % Np)
-                        m12 = (k1, kp, k3)
-
-                        dg1[i] += -0.5 * (
-                            (
-                                self.g2[m1] * self.g1[m2]
-                                + self.g1[m1] * self.g2[m2]
-                            ) * IC
-                            - (
-                                self.g2[m3] * self.g1[m4]
-                                + self.g1[m3] * self.g2[m4]
-                                - 2 * self.g1[m3] * self.g1[m4]
-                            ) * IP2
-                        )
-                        dg1[i] += 0.5 * (
-                            self.g3[m5] * self.g3[m6]
-                            + self.g3[m7] * self.g3[k1, kp, k4]
-                            - 2.0 * self.g3[m5] * self.g3[m8]
-                        ) * IP
-
-                        dg2[i] += 0.5 * (
-                            - (
-                                self.g2[m1] * self.g2[m2]
-                                + self.g1[m1] * self.g1[m2]
-                            ) * IC
-                            + self.g2[m3] * self.g2[m4] * IP2
-                        )
-                        dg2[i] += 0.5 * self.g3[k1, kp, k4] * self.g3[m6] * IP
-
-                        dg3[i] += 0.5 * (
-                            self.g3[m5] * self.g2[m7]
-                            + self.g3[k1, kp, k4] * self.g1[m7]
-                            + self.g2[m5] * self.g3[m7]
-                            + self.g1[m5] * self.g3[m6]
-                            - 2 * self.g1[m7] * self.g3[m5]
-                            - 2 * self.g3[m7] * self.g1[m5]
-                        ) * IP
-                        dg3[i] += 0.5 * (
-                            self.g3[m12] * self.g2[m9]
-                            + self.g3[m10] * self.g2[m11]
-                        ) * IPP
-        del self.loops
-        return self.pack(dg1, dg2, dg3)
+ 

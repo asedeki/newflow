@@ -17,6 +17,7 @@ Makefile
 *.c
 lib/
 tmp/
+docs/
 tobeluga.py
 getbeluga.py
 *.tgz

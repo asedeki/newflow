@@ -3,6 +3,7 @@ import sys
 import pathlib
 import numpy as np
 import os
+import time
 # from random import choice, randint
 path = os.getcwd().split("/")
 if "newflow" in path:
@@ -64,7 +65,7 @@ class TestInteraction(unittest.TestCase):
 
         g_dict = {}
         g_dict[0] = [int.g1[0, 0, 0], int.g2[0, 0, 0], int.g3[0, 0, 0]]
-        for _ in range(60):
+        for _ in range(1):
             integrator.next_value(l_ini=li, l_next=lf)
             g_dict[lf] = [int.g1[0, 0, 0], int.g2[0, 0, 0], int.g3[0, 0, 0]]
             #print(f"{loops.Temperature}\t{lf}\t {int.g1[0,0,0]}")
@@ -75,7 +76,36 @@ class TestInteraction(unittest.TestCase):
             lf += 0.1
         # data = {"T": loops.Temperature, "g": g_dict}
         # np.save("test_interactions", data)
+        
+    def test_integration_interaction_nm(self, data={}):
 
+        tini = time.time()
+        data = np.load("result.npy", allow_pickle=True)[()]
+
+        parameters = data["param"]
+        loops = Loops()
+        loops.initialize(**parameters)
+        int = Interaction(parameters)
+        int.set_loops(loops)
+        integrator = Dynamic(
+            rel_tol=1e-5).get_integrator(int)
+        
+        li, lf = 0, 1
+        integrator.next_value(l_ini=li, l_next=lf)
+        data.update(
+            {
+                "param": parameters,
+                "time":time.time()-tini,
+                lf:[int.g1, int.g2, int.g3]
+                }
+            )
+        self.assertAlmostEqual(np.sum(int.g1)-np.sum(data[lf][0]),0, NN)
+        self.assertAlmostEqual(np.sum(int.g2)-np.sum(data[lf][1]),0, NN)
+        self.assertAlmostEqual(np.sum(int.g3)-np.sum(data[lf][2]),0, NN)
+        print(np.sum(int.g3)-np.sum(data[lf][2]))
+        print(data["time"])
+        np.save("data_test_interaction.npy", data)
+NN=8
 
 if __name__ == "__main__":
     unittest.main()
