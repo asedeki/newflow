@@ -8,26 +8,22 @@ created on august 25, 2019
 # TODO http://numba.pydata.org/numba-doc/latest/user/jitclass.html?highlight=jitclass
 # IDEA : utilise numba jitclass
 # import concurrent.futures as concfut
+import sys
 import os
-from collections import namedtuple
 
 import numpy as np
-from numba import jit
-
 
 path = os.getcwd().split("/")
 if "newflow" in path:
     path = "/".join(path[:path.index("newflow") + 1])
 else:
-    path = "/".join(path.append("newflow"))
-try:
-    from integrable import Integrable
-    from loops import Loops
-    from utils import rg_equations_interaction
-except ModuleNotFoundError:
-    from src.integrable import Integrable
-    from src.loops import Loops
-    from src.utils import rg_equations_interaction
+    path.append("newflow")
+    path = "/".join(path)
+sys.path.append(path)
+
+from src.integrable import Integrable
+from src.loops import Loops
+from src.utils import best_match_dict, rg_equations_interaction
 
 # todo reflechir a wrap(), %N ne donne que des valeurs positives
 
@@ -38,33 +34,28 @@ class Interaction(Integrable):
             g1, g2, umklapp g3
     '''
     loops = None
+    _params = ["g1", "g2", "g3", "Np"]
+    parameters = {k: None for k in _params}
+
     def __init__(self, parameters):
+        self.parameters.update(
+            best_match_dict(parameters, self._params)
+        )
 
-        self.parameters = namedtuple("Parameters",
-                                     parameters.keys())(**parameters)
-        self.Ng = self.parameters.Np**3
-        self.ndim = (self.parameters.Np,
-                     self.parameters.Np, self.parameters.Np)
-        self.initialize()
-
+        Np = self.parameters["Np"]
+        self.Ng = Np**3
+        self.ndim = (Np, Np, Np)
         self.Neq = 3 * self.Ng
 
     def initialize(self, **kwargs):
+        self.parameters.update(
+            best_match_dict(kwargs, self._params)
+        )
 
-        if kwargs:
-            g1 = kwargs["g1"]
-            g2 = kwargs["g2"]
-            g3 = kwargs["g3"]
-        else:
-            g1 = self.parameters.g1
-            g2 = self.parameters.g2
-            g3 = self.parameters.g3
-
-        self.ndim = (self.parameters.Np, self.parameters.Np,
-                     self.parameters.Np)
-        self.g1 = np.ones(self.ndim, float) * g1
-        self.g2 = np.ones(self.ndim, float) * g2
-        self.g3 = np.ones(self.ndim, float) * g3
+        self.g1 = np.ones(self.ndim, float) * self.parameters["g1"]
+        self.g2 = np.ones(self.ndim, float) * self.parameters["g2"]
+        self.g3 = np.ones(self.ndim, float) * self.parameters["g3"]
+        self.loops.initialize(**kwargs)
 
     def set_loops(self, loops: Loops):
         self.loops = loops
@@ -172,5 +163,3 @@ class Interaction(Integrable):
                                  self.g1, self.g2, self.g3,
                                  loops.Peierls, loops.Cooper)
         return self.pack(dg1, dg2, dg3)
-
- 

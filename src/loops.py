@@ -1,19 +1,23 @@
 
 import difflib
 import numpy as np
+import os
+import sys
+path = os.getcwd().split("/")
+
+if "newflow" in path:
+    path = "/".join(path[:path.index("newflow") + 1])
+else:
+    path.append("newflow")
+    path = "/".join(path)
+sys.path.append(path)
 
 try:
-    import LoopsIntegration as cb
-    from utils import best_match_dict
-except Exception:
-    import os
-    import sys
-    path = os.getcwd().split("/")
-    path = "/".join(path[:path.index("newflow") + 1])
-    sys.path.append(path)
     import lib.LoopsIntegration as cb
     from src.utils import best_match_dict
-
+except ImportError as e:
+    print(f"path={path}")
+    raise ImportError
 
 # import pstats
 # import cProfile
@@ -26,7 +30,7 @@ class Loops():
     Peierls_susc = None
     loops_donne = False
     _params = ["Np", "tp2", "tp", "Ef",
-    "Temperature", "lflow"]
+               "Temperature", "lflow"]
     parameters = {k: None for k in _params}
 
     def __new__(cls, *args, **kwargs):
@@ -83,6 +87,7 @@ class Loops():
             to do integration for time considerations.
 
         '''
+        # input(f"T_loops = {self.parameters['Temperature']}")
         if lflow is not None:
             self.parameters["lflow"] = lflow
         try:

@@ -10,16 +10,13 @@ path = os.getcwd().split("/")
 if "newflow" in path:
     path = "/".join(path[:path.index("newflow") + 1])
 else:
-    path = "/".join(path.append("newflow"))
-try:
-    from interaction import Interaction
-    from integrable import Integrable
-    from loops import Loops
-except ModuleNotFoundError:
-    sys.path.append(path)
-    from src.interaction import Interaction
-    from src.integrable import Integrable
-    from src.loops import Loops
+    path.append("newflow")
+    path = "/".join(path)
+sys.path.append(path)
+
+from src.interaction import Interaction
+from src.integrable import Integrable
+from src.loops import Loops
 
 
 def rg_equations_cbdw(self, loops: Loops, couplage: Interaction):

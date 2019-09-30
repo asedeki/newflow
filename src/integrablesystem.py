@@ -6,18 +6,14 @@ path = os.getcwd().split("/")
 if "newflow" in path:
     path = "/".join(path[:path.index("newflow")+1])
 else:
-    path = "/".join(path.append("newflow"))
-try:
-    from integrable import Integrable
-    from interaction import Interaction
-    from quasi1dsusceptibilities import Susceptibilities
-    from loops import Loops
-except ModuleNotFoundError:
-    sys.path.append(path)
-    from src.integrable import Integrable
-    from src.interaction import Interaction
-    from src.quasi1dsusceptibilities import Susceptibilities
-    from src.loops import Loops
+    path.append("newflow")
+    path = "/".join(path)
+sys.path.append(path)
+
+from src.integrable import Integrable
+from src.interaction import Interaction
+from src.quasi1dsusceptibilities import Susceptibilities
+from src.loops import Loops
 
 
 class IntegrableQuasi1dSystem(Integrable):

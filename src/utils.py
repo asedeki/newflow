@@ -1,8 +1,9 @@
 import difflib
 
-from numba import jit, njit, gdb_init
+from numba import jit, njit
 
 # import future.concurrent
+
 
 def best_match_dict(parameters: dict, match_param_keys) -> dict:
     _best_match_dict = dict()
@@ -14,14 +15,14 @@ def best_match_dict(parameters: dict, match_param_keys) -> dict:
     return _best_match_dict
 
 
-@jit(cache=True, nopython=True)
+@njit(cache=True)
 def rg_equations_interaction(dg1, dg2, dg3, self_g1, self_g2,
                              self_g3, loopsPeierls, loopsCooper):
 
     Np = loopsPeierls.shape[0]
     N2 = Np // 2
     # inds = (-N2, N2)
-    inds = (-N2, N2)
+    inds = (0, Np)
     for k1 in range(inds[0], inds[1]):
         for k2 in range(inds[0], inds[1]):
             qc = (k1 + k2) % Np
@@ -67,9 +68,9 @@ def rg_equations_interaction(dg1, dg2, dg3, self_g1, self_g2,
                     ) * IP
 
                     dg2[i] += 0.5 * (
-                        - (
-                            self_g2[m1] * self_g2[m2]
-                            + self_g1[m1] * self_g1[m2]
+                        +(
+                            - self_g2[m1] * self_g2[m2]
+                            - self_g1[m1] * self_g1[m2]
                         ) * IC
                         + self_g2[m3] * self_g2[m4] * IP2
                     )

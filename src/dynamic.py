@@ -3,21 +3,18 @@ import sys
 import warnings
 
 import numpy as np
-from scipy.integrate import ode, solve_ivp
+from scipy.integrate import ode
 
 path = os.getcwd().split("/")
 if "newflow" in path:
     path = "/".join(path[:path.index("newflow")+1])
 else:
-    path = "/".join(path.append("newflow"))
-try:
-    from integrable import Integrable
-    from integrablesystem import IntegrableSystem
+    path.append("newflow")
+    path = "/".join(path)
 
-except Exception:
-    sys.path.append(path)
-    from src.integrable import Integrable
-    from src.integrablesystem import IntegrableSystem
+sys.path.append(path)
+from src.integrable import Integrable
+from src.integrablesystem import IntegrableSystem
 
 
 class Dynamic():
@@ -35,10 +32,24 @@ class Dynamic():
         self.rtol = rel_tol
         self.ode_method = ode_method
 
+    def initialize(self, **kwargs):
+        """ Description
+        :type self:
+        :param self:
+
+        :type **kwargs:
+        :param **kwargs:
+
+        :raises:
+
+        :rtype:
+        """
+        
+        self.dynamical_sytem.initialize(**kwargs)
+
     def get_integrator(self, dynamical_system: Integrable,
                        **kwargs):
         self.set_dynamical_system(dynamical_system)
-        self.dynamical_sytem.initialize(**kwargs)
         self.__get_integrator()
         return self
 
@@ -86,21 +97,6 @@ class Dynamic():
             self.dynamical_sytem.unpack(self.ode_integrator.y)
 
         return self.ode_integrator.successful()
-
-    def evolutionl(self, li, lf):
-        def rg(l, y):
-            dy = self.__derivative(y, l)
-            return dy
-        l_rg = [li, lf]
-        y0 = self.__get_init_value()
-        with warnings.catch_warnings():
-            sol = solve_ivp(rg, l_rg, y0, t_eval=[li, lf])
-            if (sol.success):
-                self.dynamical_sytem.unpack(sol.y[:, -1])
-                return True
-            else:
-                # print(sol.message)
-                return False
 
     # # Context manager
     # def __enter__(self):

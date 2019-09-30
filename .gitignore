@@ -11,7 +11,7 @@ interactions.npy
 g.dat
 tmp
 tata
-Makefile
+#Makefile
 *.npz
 *.npy
 *.c
