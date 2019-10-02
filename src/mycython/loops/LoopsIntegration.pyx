@@ -120,7 +120,7 @@ cdef double vbulle(integrand derivee, pquasi1d *pq1d, double kp, double kf, doub
         #The higher-order rules give better accuracy for smooth
         #functions, while lower-order rules save time when the function contains
         #local difficulties, such as discontinuities.
-        double epsabs = 0.0, epsrel=1e-8
+        double epsabs = 0.0, epsrel=1e-6
         #gsl_integration_workspace *w
         gsl_integration_cquad_workspace *w
     w = gsl_integration_cquad_workspace_alloc (100)
@@ -147,33 +147,6 @@ cdef double vbulle(integrand derivee, pquasi1d *pq1d, double kp, double kf, doub
     #gsl_integration_qng(&F, k_ini, k_end, epsabs, epsrel, &result, &error, &nevals)
     return result/float(pq1d.Np)
 
-# cpdef void loops_integration(double x, double T, pquasi1d param,
-#     double[:,:,::1] IC, double[:,:,::1] IP, double[:,::1] IPsusc):
-#     cdef:
-#         int kp, qp, k1
-#         int N2 = param.Np // 2
-#         pquasi1d param1 = param
-
-#     param1.Ef = param.Ef * exp(-x)
-
-#     #for qp in prange(-N2, N2,nogil=True):
-#     for k1 in range(-N2, N2):
-#         IPsusc[k1,0] = vbulle(&derivsusc, &param1, float(k1), float(k1), 0.0, +1,T)
-#         IPsusc[k1,1] = vbulle(&derivsusc, &param1, float(k1), float(k1), float(N2), +1,T)
-#         for kp in range(-N2,N2):
-#             for qp in range(-N2,N2):
-#             #for qp in prange(-N2, N2,nogil=True):
-#                 #print(f"kp= {kp}  k1={k1}  qp={qp}")
-#                 IP[k1, kp, qp] = vbulle(&deriv, &param1, float(kp), float(k1), float(qp), +1,T)
-#                 IC[k1, kp, qp] = vbulle(&deriv, &param1, float(kp), float(k1), float(qp), -1,T)
-
-#     # for k1 in range(-N2,N2):
-#     #     for kp in range(1,N2):
-#     #         for qp in range(-N2,N2):
-#     #             IP[k1, kp, qp] = IP[-k1, -kp, -qp]
-#     #             IC[k1, kp, qp] = IC[-k1, -kp, -qp]
-
-
 cpdef bint loops_integration(pquasi1d param,
     double[:,:,::1] IC, double[:,:,::1] IP, double[:,::1] IPsusc):
     cdef:
@@ -190,13 +163,14 @@ cpdef bint loops_integration(pquasi1d param,
 
     with nogil, parallel():
         for k1 in prange(Np):#, schedule="dynamic"):
-    #for k1 in range(Np):
             IPsusc[k1,0] = vbulle(&derivsusc, &param1, float(k1), float(k1), 0.0, +1,T)
             IPsusc[k1,1] = vbulle(&derivsusc, &param1, float(k1), float(k1), float(N2), +1,T)
             for kp in range(Np):
                 for qp in range(N2+1):
-                        IP[k1, kp, qp] = vbulle(&deriv, &param1, float(k1), float(kp), float(qp), +1,T)
-                        IC[k1, kp, qp] = vbulle(&deriv, &param1, float(k1), float(kp), float(qp), -1,T)
+                        IP[k1, kp, qp] = vbulle(&deriv, &param1,
+                            float(k1), float(kp), float(qp), +1,T)
+                        IC[k1, kp, qp] = vbulle(&deriv, &param1,
+                            float(k1), float(kp), float(qp), -1,T)
     for k1 in range(Np):
         for kp in range(Np):
             for qp in range(N2+1,Np):

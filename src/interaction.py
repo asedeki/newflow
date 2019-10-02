@@ -23,7 +23,7 @@ sys.path.append(path)
 
 from src.integrable import Integrable
 from src.loops import Loops
-from src.utils import best_match_dict, rg_equations_interaction
+import src.utils as utils
 
 # todo reflechir a wrap(), %N ne donne que des valeurs positives
 
@@ -39,7 +39,7 @@ class Interaction(Integrable):
 
     def __init__(self, parameters):
         self.parameters.update(
-            best_match_dict(parameters, self._params)
+            utils.best_match_dict(parameters, self._params)
         )
 
         Np = self.parameters["Np"]
@@ -49,12 +49,12 @@ class Interaction(Integrable):
 
     def initialize(self, **kwargs):
         self.parameters.update(
-            best_match_dict(kwargs, self._params)
+            utils.best_match_dict(kwargs, self._params)
         )
 
-        self.g1 = np.ones(self.ndim, float) * self.parameters["g1"]
-        self.g2 = np.ones(self.ndim, float) * self.parameters["g2"]
-        self.g3 = np.ones(self.ndim, float) * self.parameters["g3"]
+        self.g1 = np.ones(self.ndim, float) * float(self.parameters["g1"])
+        self.g2 = np.ones(self.ndim, float) * float(self.parameters["g2"])
+        self.g3 = np.ones(self.ndim, float) * float(self.parameters["g3"])
         self.loops.initialize(**kwargs)
 
     def set_loops(self, loops: Loops):
@@ -124,7 +124,7 @@ class Interaction(Integrable):
         self.g2 = y[self.Ng:2 * self.Ng].reshape(self.ndim)
         self.g3 = y[2 * self.Ng:3 * self.Ng].reshape(self.ndim)
 
-    def rg_equations(self, loops: Loops = None, lflow: float = 0):
+    def rg_equations(self, lflow: float):
         """[summary]
 
         Keyword Arguments:
@@ -152,14 +152,11 @@ class Interaction(Integrable):
                     goology interaction. The result is concatenated
                     in an numpy array via the pack function.
         """
-        if loops is None:
-            loops = self.loops
-            loops(lflow=lflow)
-            # loops.loops_donne = False
+        self.loops(lflow=lflow)
         dg1 = np.zeros(self.ndim, float)
         dg2 = np.zeros(self.ndim, float)
         dg3 = np.zeros(self.ndim, float)
-        rg_equations_interaction(dg1, dg2, dg3,
-                                 self.g1, self.g2, self.g3,
-                                 loops.Peierls, loops.Cooper)
+        utils.rg_equations_interaction(dg1, dg2, dg3,
+                                       self.g1, self.g2, self.g3,
+                                       self.loops.Peierls, self.loops.Cooper)
         return self.pack(dg1, dg2, dg3)

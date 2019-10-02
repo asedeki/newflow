@@ -14,7 +14,7 @@ sys.path.append(path)
 
 try:
     import lib.LoopsIntegration as cb
-    from src.utils import best_match_dict
+    import src.utils as utils
 except ImportError as e:
     print(f"path={path}")
     raise ImportError
@@ -25,22 +25,26 @@ except ImportError as e:
 
 
 class Loops():
+    _params = ["Np", "tp2", "tp", "Ef",
+               "Temperature", "lflow"]
+
+    # def __new__(cls, *args, **kwargs):
+    #     instance = super(Loops, cls).__new__(cls)
+    #     return instance
     Cooper = None
     Peierls = None
     Peierls_susc = None
     loops_donne = False
-    _params = ["Np", "tp2", "tp", "Ef",
-               "Temperature", "lflow"]
-    parameters = {k: None for k in _params}
-
-    def __new__(cls, *args, **kwargs):
-        instance = super(Loops, cls).__new__(cls)
-        return instance
 
     def __init__(self, **parameters: dict) -> None:
+        # self.Cooper = None
+        # self.Peierls = None
+        # self.Peierls_susc = None
+        # self.loops_donne = False
+        self.parameters = {k: None for k in self._params}
         if parameters is not None:
             self.parameters.update(
-                best_match_dict(parameters, self._params)
+                utils.best_match_dict(parameters, self._params)
             )
 
     def initialize(self, **kwargs: dict) -> None:
@@ -51,10 +55,11 @@ class Loops():
 
         if kwargs:
             self.parameters.update(
-                best_match_dict(kwargs, self._params)
+                utils.best_match_dict(kwargs, self._params)
             )
         # input(f"param_in_intialize = {self.parameters}")
-        self._assert_parameters_not_none()
+        # print(f"lflow_ini = {self.parameters['lflow']}")
+        # self._assert_parameters_not_none()
 
         shape = (self.parameters["Np"], self.parameters["Np"],
                  self.parameters["Np"])
@@ -72,14 +77,14 @@ class Loops():
                 f"Loop's ({','.join(_none_param)}) parameters must be given."
             )
 
-    def get_values(self, **kwargs: dict):
+    def get_values(self, **kwargs):
 
         # cb.loops_integration(l_rg, self.Temperature, self.parameters, self.Cooper,
         #                      self.Peierls, self.Peierls_susc)
         self.initialize(**kwargs)
         self.__call__()
 
-    def __call__(self, lflow: float = None):
+    def __call__(self, **kwargs):
         '''
             Calculate the values of Cooper and Peierls loops
             for a given Temperature and RG_l parameterseter.
@@ -87,11 +92,15 @@ class Loops():
             to do integration for time considerations.
 
         '''
-        # input(f"T_loops = {self.parameters['Temperature']}")
-        if lflow is not None:
-            self.parameters["lflow"] = lflow
+        if kwargs:
+            self.parameters.update(
+                utils.best_match_dict(kwargs, self._params)
+            )
+
+        # print(f"lflow_call = {self.parameters['lflow']}")
+        self._assert_parameters_not_none()
         try:
-            self.loops_donne = cb.loops_integration(
+            Loops.loops_donne = cb.loops_integration(
                 self.parameters, self.Cooper,
                 self.Peierls, self.Peierls_susc
             )
@@ -100,3 +109,8 @@ class Loops():
             return False
         else:
             return True
+
+    def __delete__(self, name):
+        self.parameters = {}
+        input(Loops.Cooper)
+        return super().__delattr__(self)

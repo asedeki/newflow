@@ -6,15 +6,13 @@ import os
 from random import choice, randint
 path = os.getcwd().split("/")
 if "newflow" in path:
-    path = "/".join(path[:path.index("newflow")+1])
+    path = "/".join(path[:path.index("newflow") + 1])
 else:
     path = "/".join(path.append("newflow"))
 
-try:
-    from loops import Loops
-except ImportError:
-    sys.path.append(path)
-    from src.loops import Loops
+
+sys.path.append(path)
+from src.loops import Loops
 
 
 class TestLoops(unittest.TestCase):
@@ -22,23 +20,61 @@ class TestLoops(unittest.TestCase):
         parameters = {"tp": 200, "tp2": 20, "Ef": 3000, "Np": 32}
         self.loops = Loops(**parameters)
 
-    def test_init(self):
-        self.loops.initialize(Temperature=10, lflow=1, tp=0, tp2=0)
-        for k in self.loops.parameters:
-            print(f"{k}  {self.loops.parameters[k]}")
+    # def test_init(self):
+    #     self.loops.initialize(Temperature=10, lflow=1, tp=0, tp2=0)
+    #     for k in self.loops.parameters:
+    #         print(f"{k}  {self.loops.parameters[k]}")
+    # @staticmethod
+    def calcul(self, lrg):
+        lrg = 1
+        print(lrg)
+        # parameters = {"tp": 200, "tp2": 20, "Ef": 3000, "Np": 32}
+        # loops = Loops(**parameters)
+        # loops.initialize(Temperature=1, lflow=lrg)
+        # loops()
+        # print(np.sum(self.loops.Cooper))
+        # return np.sum(self.loops.Cooper)
+        return lrg
 
-    def test_call(self):
-
+    def test_temps(self):
+        import time
+        import concurrent.futures
         Temperature = 1.0
         l_rg = 1.0
+        t1 = time.time()
+        with concurrent.futures.ProcessPoolExecutor() as executor:
+            ll = list(np.arange(2))
+            # resuls = [executor.submit(self.calcul, **{"lrg": lrg})
+            #           for lrg in range(5)
+            #           ]
+            # for fgs in concurrent.futures.as_completed(resuls):
+            #     print(fgs.result())
+            ll = [1, 2]
+            exx = executor.map(self.calcul, ll)
+            for resuls in exx:
+                print(resuls)
+        # for r in resuls:
+        #     print(r)
+
+        # for _ in range(50):
+        #     self.loops.initialize(Temperature=Temperature, lflow=l_rg)
+        #     self.loops()
+        print(time.time() - t1)
+        self.assertEqual(8.4, time.time() - t1,
+                         "temps d'execution integrale ancien nouveau")
+
+    def atest_call(self):
+        Temperature = 1.0
+        l_rg = 1.0
+
         self.loops.initialize(Temperature=Temperature, lflow=l_rg)
         self.loops()
-
         a = (np.sum(self.loops.Cooper), np.sum(self.loops.Peierls),
              np.sum(self.loops.Peierls_susc))
         b = (878.6685890125864, 878.5183879970207, 1.7964371318299874)
         #
         self.assertEqual(a, b)
+
         # # # # # input(loops.parameters)
         loops = self.loops
         Temperature = 10.0
