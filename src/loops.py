@@ -3,21 +3,21 @@ import difflib
 import numpy as np
 import os
 import sys
-path = os.getcwd().split("/")
-
-if "newflow" in path:
-    path = "/".join(path[:path.index("newflow") + 1])
-else:
-    path.append("newflow")
-    path = "/".join(path)
-sys.path.append(path)
 
 try:
+    import newflow.lib.LoopsIntegration as cb
+    import newflow.src.utils as utils
+except Exception:
+    path = os.getcwd().split("/")
+    if "newflow" in path:
+        path = "/".join(path[:path.index("newflow") + 1])
+    else:
+        path.append("newflow")
+        path = "/".join(path)
+    sys.path.append(path)
     import lib.LoopsIntegration as cb
     import src.utils as utils
-except ImportError as e:
-    print(f"path={path}")
-    raise ImportError
+
 
 # import pstats
 # import cProfile
@@ -31,16 +31,14 @@ class Loops():
     # def __new__(cls, *args, **kwargs):
     #     instance = super(Loops, cls).__new__(cls)
     #     return instance
-    Cooper = None
-    Peierls = None
-    Peierls_susc = None
-    loops_donne = False
+    # loops_donne = False
 
     def __init__(self, **parameters: dict) -> None:
-        # self.Cooper = None
-        # self.Peierls = None
-        # self.Peierls_susc = None
-        # self.loops_donne = False
+        self.Cooper = None
+        self.Peierls = None
+        self.Peierls_susc = None
+        self.loops_donne = False
+
         self.parameters = {k: None for k in self._params}
         if parameters is not None:
             self.parameters.update(
@@ -78,9 +76,6 @@ class Loops():
             )
 
     def get_values(self, **kwargs):
-
-        # cb.loops_integration(l_rg, self.Temperature, self.parameters, self.Cooper,
-        #                      self.Peierls, self.Peierls_susc)
         self.initialize(**kwargs)
         self.__call__()
 
@@ -97,7 +92,6 @@ class Loops():
                 utils.best_match_dict(kwargs, self._params)
             )
 
-        # print(f"lflow_call = {self.parameters['lflow']}")
         self._assert_parameters_not_none()
         try:
             Loops.loops_donne = cb.loops_integration(
@@ -112,5 +106,4 @@ class Loops():
 
     def __delete__(self, name):
         self.parameters = {}
-        input(Loops.Cooper)
         return super().__delattr__(self)

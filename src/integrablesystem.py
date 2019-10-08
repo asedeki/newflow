@@ -4,33 +4,32 @@ import numpy as np
 
 path = os.getcwd().split("/")
 if "newflow" in path:
-    path = "/".join(path[:path.index("newflow")+1])
+    path = "/".join(path[:path.index("newflow") + 1])
 else:
     path.append("newflow")
     path = "/".join(path)
 sys.path.append(path)
-
-from src.integrable import Integrable
-from src.interaction import Interaction
-from src.quasi1dsusceptibilities import Susceptibilities
 from src.loops import Loops
+from src.quasi1dsusceptibilities import Susceptibilities
+from src.interaction import Interaction
+from src.integrable import Integrable
 
 
 class IntegrableQuasi1dSystem(Integrable):
     def __init__(self):
         self.interaction = None
         self.susceptibilities = None
-        self.loops = None
-        self.Neq = None
 
-    def set_all(self, parameters: dict, susc_name: str = None):
-        self.parameters = parameters
-        self.interaction = Interaction(parameters)
-        self.susceptibilities = Susceptibilities().append_all(susc_name)
-        self.loops = Loops(**parameters)
-        self.Neq = self.interaction.Neq
-        for s in self.susceptibilities.susceptibilities:
-            self.Neq += s.dim1*(parameters["Np"]+1)
+    def set_all(self, susc_name: str = None, **parameters):
+        Np = parameters["Np"]
+        self.interaction = Interaction(**parameters)
+        if susc_name is None:
+            self.susceptibilities = Susceptibilities(Np=Np).append_all()
+        else:
+            self.susceptibilities = Susceptibilities(Np=Np)
+            self.susceptibilities.append_susceptibility_by_name(
+                name_string=susc_name
+            )
         return self
 
     def set_interaction(self, g: Interaction):
@@ -47,17 +46,9 @@ class IntegrableQuasi1dSystem(Integrable):
             )
         self.susceptibilities = susceptibilities
 
-    def set_loops(self, loops: Loops):
-        if not (isinstance(loops, Loops)):
-            raise TypeError(
-                f"{loops} must be a <class Loops> object."
-            )
-        self.loops = loops
-
     def initialize(self, **kwargs):
-        self.loops.initialize(**kwargs)
         self.interaction.initialize(**kwargs)
-        self.susceptibilities.initialize(Np=self.parameters["Np"])
+        self.susceptibilities.initialize()
 
     def initpack(self) -> np.ndarray:
         y = np.concatenate(
@@ -76,26 +67,26 @@ class IntegrableQuasi1dSystem(Integrable):
         self.susceptibilities.unpack(y[self.interaction.Neq:])
 
     def rg_equations(self, lflow: float) -> np.ndarray:
-        self.loops(lflow=lflow)
-        # input(f"T_loops={self.loops.Temperature}")
-        dy = self.interaction.rg_equations(loops=self.loops)
         dy = np.concatenate(
-            (dy, self.susceptibilities.rg_equations(
-                self.loops, self.interaction))
+            (
+                self.interaction.rg_equations(lflow=lflow),
+                self.susceptibilities.rg_equations(self.interaction)
+            )
         )
         return dy
 
-    def __iter__(self):
-        return self
+    # def __iter__(self):
+    #     return self
 
-    def __next(self):
-        pass
+    # def __next(self):
+    #     pass
 
 
 class IntegrableSystem(Integrable):
     def __init__(self):
-        self.integrable_systems = []
+        self.integrable_systems = list()
         self.size = 0
+        self.Neq = 0
 
     def add_integrable_system(self, *integ_systems: Integrable):
         for integ_sys in integ_systems:
@@ -106,6 +97,7 @@ class IntegrableSystem(Integrable):
             else:
                 self.integrable_systems.append(integ_sys)
                 self.size += 1
+                self.Neq += integ_sys.Neq
 
     def remove_integrable_system(self, *integ_systems: Integrable):
         assert(self.size > 0)
@@ -116,10 +108,12 @@ class IntegrableSystem(Integrable):
                 )
             self.integrable_systems.remove(integ_sys)
             self.size -= 1
+            self.Neq -= integ_sys.Neq
 
     def remove_all(self):
         self.integrable_systems.clear()
         self.size = 0
+        self.Neq = 0
 
     def initialize(self, **kwargs):
         for integ_sys in self.integrable_systems:
@@ -138,39 +132,47 @@ class IntegrableSystem(Integrable):
 
     def unpack(self, y: np.ndarray) -> None:
         index_ini = 0
-        index_final = self.integrable_systems[0].Neq
-        self.integrable_systems[0].unpack(y[index_ini:index_final])
-        index_ini = index_final
-        for i in range(1, self.size):
-            integ_sys = self.integrable_systems[i]
-            index_final += integ_sys.Neq
-            integ_sys.unpack(y[index_ini:index_final])
-            index_ini += integ_sys.Neq
+        index_final = 0
+        for i in range(self.size):
+            index_final += self.integrable_systems[i].Neq
+            self.integrable_systems[i].unpack(y[index_ini:index_final])
+            index_ini = index_final
 
     def rg_equations(self, lflow: float) -> np.ndarray:
         dy = self.integrable_systems[0].rg_equations(lflow=lflow)
         for i in range(1, self.size):
-            integ_sys = self.integrable_systems[i]
             dy = np.concatenate(
-                (dy, integ_sys.rg_equations(lflow=lflow))
+                (dy,
+                 self.integrable_systems[i].rg_equations(lflow=lflow)
+                 )
             )
         return dy
 
-    def __iter__(self):
-        return self
+    # def __iter__(self):
+    #     return self
 
-    def __next(self):
-        pass
+    # def __next(self):
+    #     pass
 
 
 if __name__ == "__main__":
     parameters = {
-        "tp": 200, "tp2": 20,
-        "Ef": 3000, "Np": 4,
-        "g1": 0, "g2": 0, "g3": 0
+        "tp": 0, "tp2": 0,
+        "Ef": 3000, "Np": 2,
+        "g1": 0.2, "g2": 0.64, "g3": 0.03,
+        "Temperature": 100
     }
-    d = IntegrableQuasi1dSystem(parameters=parameters)
-    d.set_all()
-    print(
-        list(d.__dict__.keys())
-    )
+    S = Susceptibilities(Np=2).append_all()
+    S.delete_susceptibility_by_name('csdw cbdw singhlet triplet')
+    g = Interaction(**parameters)
+
+    # d = IntegrableQuasi1dSystem().set_all(**parameters)
+    d = IntegrableQuasi1dSystem()
+    d.set_interaction(g)
+    d.set_susceptibilities(S)
+    d.initialize(Temperature=1e-80)
+    y = d.rg_equations(lflow=1)
+    print(d.interaction.loops.Cooper)
+    d.unpack(y)
+    for name, _, _ in d.susceptibilities:
+        print(name)

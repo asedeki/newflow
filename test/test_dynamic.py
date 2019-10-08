@@ -54,6 +54,7 @@ class Intg(Integrable):
 class TestLoops(unittest.TestCase):
     def test_integrator(self):
         I1 = Intg(1, 1)
+        I1.initialize()
         d = Dynamic(
             rel_tol=1e-10).get_integrator(I1)
         lf = 10
@@ -62,6 +63,7 @@ class TestLoops(unittest.TestCase):
             y0 = I1.y[0]
             y1 = I1.y[1]
             d.next_value(l_ini=li, l_next=lf)
+
             #self.d.evolutionl(0, l)
             # print(f"l_final, l_ini = {lf},{li}")
             # print("_____________________________")
@@ -75,6 +77,7 @@ class TestLoops(unittest.TestCase):
         I2 = Intg(2, 2)
         S = IntegrableSystem()
         S.add_integrable_system(I1, I2)
+        S.initialize()
         d = Dynamic(
             rel_tol=1e-10).get_integrator(S)
         lf = 10

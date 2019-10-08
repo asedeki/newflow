@@ -46,19 +46,21 @@ class TestIntegrableQuasi1dSystem(unittest.TestCase):
     def test_integration_interaction(self):
         parameters = {
             "tp": 200, "tp2": 20,
-            "Ef": 3000, "Np": 32,
+            "Ef": 3000, "Np": 4,
             "g1": 0.2, "g2": 0.64, "g3": 0.0,
             "Temperature": 100
         }
 
         IQ = IntegrableQuasi1dSystem().set_all(
-            parameters=parameters
+            **parameters
         )
         # input(IQ.Neq)
+        # IQ.initialize()
         integrator = Dynamic(
             rel_tol=1e-3).get_integrator(IQ)
         lf = 0.1
         li = 0
+        integrator.initialize()
         integrator.next_value(l_ini=li, l_next=lf)
         #
         # g_dict = {}

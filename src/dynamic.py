@@ -3,11 +3,11 @@ import sys
 import warnings
 
 import numpy as np
-from scipy.integrate import ode
+import scipy.integrate as scipyInt
 
 path = os.getcwd().split("/")
 if "newflow" in path:
-    path = "/".join(path[:path.index("newflow")+1])
+    path = "/".join(path[:path.index("newflow") + 1])
 else:
     path.append("newflow")
     path = "/".join(path)
@@ -18,19 +18,14 @@ from src.integrablesystem import IntegrableSystem
 
 
 class Dynamic():
-    dynamical_sytem = None
-    rtol = None
-    ode_method = None
-    ode_integrator = None
-
-    def __init__(self, rel_tol: float = 1e-3,
-                 ode_method: str = 'dop853'):
+    def __init__(self, rel_tol: float = 1e-3):
         """
             ;param ode_method in ['dop853','dopri5','lsoda']
             default = 'dop853'
         """
+        self.dynamical_sytem = None
+        self.ode_integrator = None
         self.rtol = rel_tol
-        self.ode_method = ode_method
 
     def initialize(self, **kwargs):
         """ Description
@@ -44,12 +39,13 @@ class Dynamic():
 
         :rtype:
         """
-        
+
         self.dynamical_sytem.initialize(**kwargs)
 
-    def get_integrator(self, dynamical_system: Integrable,
-                       **kwargs):
-        self.set_dynamical_system(dynamical_system)
+    def get_integrator(self, dynamical_system: Integrable = None, ode_method: str = 'dop853'):
+        self.ode_method = ode_method
+        if dynamical_system is not None:
+            self.set_dynamical_system(dynamical_system)
         self.__get_integrator()
         return self
 
@@ -61,7 +57,7 @@ class Dynamic():
         def rg(l, y):
             dy = self.__derivative(y=y, lflow=l)
             return dy
-        self.ode_integrator = ode(rg).set_integrator(
+        self.ode_integrator = scipyInt.ode(rg).set_integrator(
             self.ode_method, rtol=self.rtol)
         # self.ode_integrator.set_f_params(9)
 
@@ -98,6 +94,17 @@ class Dynamic():
 
         return self.ode_integrator.successful()
 
+    def next(self, l_ini: float = 0.0,
+             l_next: float = 100.0,
+             **kwargs) -> bool:
+
+        def rg(y, l):
+            dy = self.__derivative(y=y, lflow=l)
+            return dy
+
+        y0 = self.__get_init_value()
+        y = scipyInt.odeint(rg, y0, [l_ini, l_next], rtol=self.rtol)
+        self.dynamical_sytem.unpack(y[1])
     # # Context manager
     # def __enter__(self):
     #     pass

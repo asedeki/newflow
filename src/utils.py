@@ -15,6 +15,16 @@ def best_match_dict(parameters: dict, match_param_keys) -> dict:
     return _best_match_dict
 
 
+def best_match_list(inilist: list, match_list: list) -> list:
+    _best_match_list = list()
+    for param in inilist:
+        v = difflib.get_close_matches(param, match_list, n=1)
+        if v:
+            _best_match_list.append(v[0])
+
+    return _best_match_list
+
+
 @njit(cache=True)
 def rg_equations_interaction(dg1, dg2, dg3, self_g1, self_g2,
                              self_g3, loopsPeierls, loopsCooper):

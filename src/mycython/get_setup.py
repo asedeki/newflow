@@ -1,9 +1,9 @@
-#!/usr/local/bin/python3
+####!/usr/local/bin/python3
 import sys
 import os
 import numpy as np
 import cython_gsl
-import Seebeck.src.myoptik2 as myoptik
+import newflow.lib.myoptik as myoptik
 
 _O = myoptik.setup_opt()
 executer = False
@@ -22,6 +22,13 @@ sources = sources[:-1]
 #     sources = f'"{sys.argv[1]}","{sys.argv[2]}"'
 # else:
 #     sources = f'"{sys.argv[1]}"'
+
+#from sysconfig import get_paths
+#from pprint import pprint
+
+#info = get_paths()  # a diction
+#input(info['include'])
+
 numpy_I = np.get_include()
 gls_I = cython_gsl.get_include()
 lib_dir = os.getcwd()
@@ -58,8 +65,8 @@ ext = Extension(
 	)
 setup(ext_modules=cythonize(ext))
 
-os.system(f"mv {module}.cpython-37m-darwin.so {module}.so")
-os.system(f"rm -r build {rmfiles}")
+#os.system(f"mv {module}.cpython-37m-darwin.so {module}.so")
+#os.system(f"rm -r build {rmfiles}")
 
 """
 import posixpath

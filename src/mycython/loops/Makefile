@@ -1,10 +1,10 @@
 all: setup.py LoopsIntegration.so
 setup.py:
-	get_setup.py -p LoopsIntegration.pyx -m LoopsIntegration
+	python ../get_setup.py -p LoopsIntegration.pyx -m LoopsIntegration
 LoopsIntegration.so: LoopsIntegration.pyx
-	python3 setup.py build_ext -i
-	#mv LoopsIntegration.cpython-37m-darwin.so LoopsIntegration.so
+	python setup.py build_ext -i
 install:
+	mv LoopsIntegration.cpython-36m-x86_64-linux-gnu.so LoopsIntegration.so
 	mv LoopsIntegration.so ../../../lib/
 clean:
 	rm -fr build LoopsIntegration.c *~ *.html

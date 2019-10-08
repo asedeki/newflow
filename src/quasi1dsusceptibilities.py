@@ -1,10 +1,9 @@
+
 import difflib
 import os
 import sys
 from types import MethodType
 import numpy as np
-from numba import njit, jit
-
 # from numpy import cos, sin
 path = os.getcwd().split("/")
 if "newflow" in path:
@@ -16,14 +15,13 @@ sys.path.append(path)
 
 from src.interaction import Interaction
 from src.integrable import Integrable
-from src.loops import Loops
+from src.utils import best_match_list
 
 
-def rg_equations_cbdw(self, loops: Loops, couplage: Interaction):
+def rg_equations_cbdw(self, couplage: Interaction):
     z = np.zeros((self.dim1, self.dim2))
     chi = np.zeros(self.dim1)
-
-    Np = loops.Peierls.shape[0]
+    Np = couplage.loops.Peierls.shape[0]
     i_sup = Np // 2
     i_inf = -i_sup
     kc = 0
@@ -31,14 +29,15 @@ def rg_equations_cbdw(self, loops: Loops, couplage: Interaction):
     qperp = [0, 1]
 
     for i in range(self.dim1):
-        chi[i] = sum((self.vertex[i, :]**2) * loops.Peierls_susc[:, qperp[i]])
+        chi[i] = sum((self.vertex[i, :]**2) *
+                     couplage.loops.Peierls_susc[:, qperp[i]])
 
     for kpp in range(i_inf, i_sup):
         for i in range(i_inf, i_sup):
             kpp_kp = (kpp - kp) % Np
             i_kp = (i - kp) % Np
-            Ipc = loops.Peierls[kpp, i, kc]
-            Ipp = loops.Peierls[kpp, i, kp]
+            Ipc = couplage.loops.Peierls[kpp, i, kc]
+            Ipp = couplage.loops.Peierls[kpp, i, kp]
 
             z[0, kpp] -= 0.5 * (2 * couplage.g1[i, kpp, kpp]
                                 - couplage.g2[i, kpp, kpp]
@@ -53,10 +52,10 @@ def rg_equations_cbdw(self, loops: Loops, couplage: Interaction):
     return self.pack(z, chi)
 
 
-def rg_equations_csdw(self, loops: Loops, couplage: Interaction):
+def rg_equations_csdw(self, couplage: Interaction):
     z = np.zeros((self.dim1, self.dim2))
     chi = np.zeros(self.dim1)
-    Np = loops.Peierls.shape[0]
+    Np = couplage.loops.Peierls.shape[0]
     i_sup = Np // 2
     i_inf = -i_sup
 
@@ -65,15 +64,16 @@ def rg_equations_csdw(self, loops: Loops, couplage: Interaction):
     qperp = [0, 1]
 
     for i in range(self.dim1):
-        chi[i] = sum((self.vertex[i, :]**2) * loops.Peierls_susc[:, qperp[i]])
+        chi[i] = sum((self.vertex[i, :]**2) *
+                     couplage.loops.Peierls_susc[:, qperp[i]])
 
     for kpp in range(i_inf, i_sup):
         for i in range(i_inf, i_sup):
 
             kpp_kp = (kpp - kp) % Np
             i_kp = (i - kp) % Np
-            Ipc = loops.Peierls[kpp, i, kc]
-            Ipp = loops.Peierls[kpp, i, kp]
+            Ipc = couplage.loops.Peierls[kpp, i, kc]
+            Ipp = couplage.loops.Peierls[kpp, i, kp]
 
             z[0, kpp] -= 0.5 * (
                 2 * couplage.g1[i, kpp, kpp]
@@ -92,24 +92,25 @@ def rg_equations_csdw(self, loops: Loops, couplage: Interaction):
     return self.pack(z, chi)
 
 
-def rg_equations_sbdw(self, loops: Loops, couplage: Interaction):
+def rg_equations_sbdw(self, couplage: Interaction):
     z = np.zeros((self.dim1, self.dim2))
     chi = np.zeros(self.dim1)
-    Np = loops.Peierls.shape[0]
+    Np = couplage.loops.Peierls.shape[0]
     i_sup = Np // 2
     i_inf = -i_sup
     kc = 0
     kp = i_inf
     qperp = [0, 1]
     for i in range(self.dim1):
-        chi[i] = sum((self.vertex[i, :]**2) * loops.Peierls_susc[:, qperp[i]])
+        chi[i] = sum((self.vertex[i, :]**2) *
+                     couplage.loops.Peierls_susc[:, qperp[i]])
 
     for kpp in range(i_inf, i_sup):
         for i in range(i_inf, i_sup):
             kpp_kp = (kpp - kp) % Np
             i_kp = (i - kp) % Np
-            Ipc = loops.Peierls[kpp, i, kc]
-            Ipp = loops.Peierls[kpp, i, kp]
+            Ipc = couplage.loops.Peierls[kpp, i, kc]
+            Ipp = couplage.loops.Peierls[kpp, i, kp]
             z[0, kpp] += 0.5 * (couplage.g2[i, kpp, kpp] -
                                 couplage.g3[i, kpp, i]) * self.vertex[0, i] * Ipc
             z[1, kpp] += 0.5 * (couplage.g2[i, kpp, kpp_kp] -
@@ -118,10 +119,10 @@ def rg_equations_sbdw(self, loops: Loops, couplage: Interaction):
     return self.pack(z, chi)
 
 
-def rg_equations_ssdw(self, loops: Loops, couplage: Interaction):
+def rg_equations_ssdw(self, couplage: Interaction):
     z = np.zeros((self.dim1, self.dim2))
     chi = np.zeros(self.dim1)
-    Np = loops.Peierls.shape[0]
+    Np = couplage.loops.Peierls.shape[0]
     i_sup = Np // 2
     i_inf = -i_sup
     kc = 0
@@ -129,14 +130,15 @@ def rg_equations_ssdw(self, loops: Loops, couplage: Interaction):
     qperp = [0, 1]
 
     for i in range(self.dim1):
-        chi[i] = sum((self.vertex[i, :]**2) * loops.Peierls_susc[:, qperp[i]])
+        chi[i] = sum((self.vertex[i, :]**2) *
+                     couplage.loops.Peierls_susc[:, qperp[i]])
 
     for kpp in range(i_inf, i_sup):
         for i in range(i_inf, i_sup):
             kpp_kp = (kpp - kp) % Np
             i_kp = (i - kp) % Np
-            Ipc = loops.Peierls[kpp, i, kc]
-            Ipp = loops.Peierls[kpp, i, kp]
+            Ipc = couplage.loops.Peierls[kpp, i, kc]
+            Ipp = couplage.loops.Peierls[kpp, i, kp]
             z[0, kpp] += 0.5 * (couplage.g2[i, kpp, kpp] +
                                 couplage.g3[i, kpp, i]) * self.vertex[0, i] * Ipc
             z[1, kpp] += 0.5 * (couplage.g2[i, kpp, kpp_kp] +
@@ -145,22 +147,22 @@ def rg_equations_ssdw(self, loops: Loops, couplage: Interaction):
     return self.pack(z, chi)
 
 
-def rg_equations_supra_singlet(self, loops: Loops, couplage: Interaction):
+def rg_equations_supra_singlet(self, couplage: Interaction):
     z = np.zeros((self.dim1, self.dim2))
     chi = np.zeros(self.dim1)
 
-    Np = loops.Peierls.shape[0]
+    Np = couplage.loops.Peierls.shape[0]
     i_sup = Np // 2
     i_inf = -i_sup
     kc = 0
     for i in range(self.dim1):
-        chi[i] = sum((self.vertex[i, :]**2) * loops.Cooper[0, :, 0])
+        chi[i] = sum((self.vertex[i, :]**2) * couplage.loops.Cooper[0, :, 0])
 
     # kp = -i_inf
     for kpp in range(i_inf, i_sup):
         for i in range(i_inf, i_sup):
             mkpp = (-kpp) % Np
-            Ic = loops.Cooper[kpp, i, kc]
+            Ic = couplage.loops.Cooper[kpp, i, kc]
             for j in range(self.dim1):
                 z[j, kpp] -= 0.5 * (couplage.g1[kpp, mkpp, i]
                                     + couplage.g2[kpp, mkpp, i]
@@ -168,22 +170,22 @@ def rg_equations_supra_singlet(self, loops: Loops, couplage: Interaction):
     return self.pack(z, chi)
 
 
-def rg_equations_supra_triplet(self, loops: Loops, couplage: Interaction):
+def rg_equations_supra_triplet(self, couplage: Interaction):
     z = np.zeros((self.dim1, self.dim2))
     chi = np.zeros(self.dim1)
-    Np = loops.Peierls.shape[0]
+    Np = couplage.loops.Peierls.shape[0]
     i_sup = Np // 2
     i_inf = -i_sup
     kc = 0
     kp = i_inf
 
     for i in range(self.dim1):
-        chi[i] = sum((self.vertex[i, :]**2) * loops.Cooper[0, :, 0])
+        chi[i] = sum((self.vertex[i, :]**2) * couplage.loops.Cooper[0, :, 0])
 
     for kpp in range(i_inf, i_sup):
         for i in range(i_inf, i_sup):
             mkpp = (-kpp) % Np
-            Ic = loops.Cooper[kpp, i, kc]
+            Ic = couplage.loops.Cooper[kpp, i, kc]
             for j in range(self.dim1):
                 z[j, kpp] += 0.5 * (couplage.g1[kpp, mkpp, i]
                                     - couplage.g2[kpp, mkpp, i]) * self.vertex[j, i] * Ic
@@ -220,26 +222,23 @@ class Susceptibility(Integrable):
                            "rg": rg_equations_supra_singlet,
                            "type": ["s", "dxy", "dx2y2", "g", "i"]}
     }
-    dim2 = None
-    Neq = None
-    dim1 = None
-    types = None
-    name = None
-    SUSCEPTIBILITY_TYPE_KEYS = SUSCEPTIBILITY_TYPE.keys()
-    vertex = None
-    susceptibility = None
-    i_dim1 = 0
-    i_dim2 = 0
+    SUSCEPTIBILITY_TYPE_KEYS = list(SUSCEPTIBILITY_TYPE.keys())
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, Np: int):
+        self.vertex = None
+        self.susceptibility = None
+        self.i_dim1 = 0
+        self.i_dim2 = 0
+        self.dim2 = Np
         near_name = difflib.get_close_matches(
-            name, list(Susceptibility.SUSCEPTIBILITY_TYPE.keys()), 1, 0.6
+            name, Susceptibility.SUSCEPTIBILITY_TYPE_KEYS, 1, 0.6
         )
         if near_name:
             near_name = near_name[0]
             susceptibility_type = Susceptibility.SUSCEPTIBILITY_TYPE[
                 near_name]
             self.dim1 = susceptibility_type["dim1"]
+            self.Neq = self.dim1 * (self.dim2 + 1)
             self.func_ini = susceptibility_type["func_ini"]
             self.rg_equations = MethodType(
                 susceptibility_type["rg"], self
@@ -249,7 +248,7 @@ class Susceptibility(Integrable):
         else:
             raise KeyError(
                 f"""{name} is not a valid susceptibility name
-            {Susceptibility.SUSCEPTIBILITY_TYPE.keys()}
+            {Susceptibility.SUSCEPTIBILITY_TYPE_KEYS}
             """)
 
     def pack(self, d_vertex: np.ndarray, d_susc: np.ndarray):
@@ -270,9 +269,7 @@ class Susceptibility(Integrable):
         self.susceptibility = y[:self.dim1]
         self.vertex = y[self.dim1:].reshape(self.dim1, self.dim2)
 
-    def initialize(self, Np: int):
-        self.dim2 = Np
-        self.Neq = self.dim1 * (self.dim2 + 1)
+    def initialize(self):
         self.vertex = np.zeros((self.dim1, self.dim2), float)
         self.susceptibility = np.zeros(self.dim1, float)
         k_perp = 2.0 * np.arange(self.dim2) * np.pi / float(self.dim2)
@@ -285,7 +282,7 @@ class Susceptibility(Integrable):
                 self.vertex[i, :] = np.sqrt(
                     2) * eval(function)(CONSTANTE * k_perp)
 
-    def rg_equations(self, l_rg: float):
+    def rg_equations(self, couplage: Interaction):
         raise NotImplementedError()
 
     def __iter__(self):
@@ -297,49 +294,62 @@ class Susceptibility(Integrable):
 class Susceptibilities(Integrable):
     i_iterator = 0
 
-    def __init__(self):
+    def __init__(self, Np: int, name_string: str = None):
         self.susceptibilities = []
         self.size = 0
+        self.Np = Np
+        if name_string is not None:
+            self.append_susceptibility_by_name(name_string)
 
-    def append_all(self, name: str = None) -> object:
-        if name is not None:
-            _all_susc = name
-        else:
-            _all_susc = " ".join(
-                list(
-                    Susceptibility.SUSCEPTIBILITY_TYPE.keys()
-                ))
+    def append_all(self) -> object:
 
+        _all_susc = " ".join(
+            Susceptibility.SUSCEPTIBILITY_TYPE_KEYS
+        )
         self.append_susceptibility_by_name(_all_susc)
 
         return self
 
     def append_susceptibility_by_name(self, name_string: str):
         susc_types = name_string.split()
-        if len(susc_types) > 1:
-            for name in susc_types:
-                self.susceptibilities.append(
-                    Susceptibility(name=name)
-                )
-                self.size += 1
-        else:
-            self.susceptibilities.append(
-                Susceptibility(name=name_string)
-            )
+        self.Neq = 0
+        for name in susc_types:
+            susc = Susceptibility(name=name, Np=self.Np)
+            self.susceptibilities.append(susc)
+            self.Neq += susc.Neq
             self.size += 1
 
-    def initialize(self, Np: int):
-        self.Neq = 0
-        for susc in self.susceptibilities:
-            susc.initialize(Np=Np)
-            self.Neq += susc.Neq
+    def delete_susceptibility_by_name(self, name_string: str):
+        susc_types = best_match_list(
+            name_string.split(),
+            Susceptibility.SUSCEPTIBILITY_TYPE_KEYS
+        )
+        print(susc_types)
+        for name in susc_types:
 
-    def rg_equations(self, loops: Loops, interaction: Interaction):
-        y = self.susceptibilities[0].rg_equations(loops, interaction)
+            for s in self.susceptibilities:
+                if s.name == name:
+                    self.susceptibilities.remove(s)
+                    self.Neq -= s.Neq
+                    self.size -= 1
+                    break
+
+    def append_susceptibility(self, susc: Susceptibility):
+        assert(isinstance(susc, Susceptibility))
+        self.Neq += susc.Neq
+        self.susceptibilities.append(susc)
+        self.size += 1
+
+    def initialize(self):
+        for susc in self.susceptibilities:
+            susc.initialize()
+
+    def rg_equations(self, couplage: Interaction):
+        y = self.susceptibilities[0].rg_equations(couplage=couplage)
         for i in range(1, self.size):
             y = np.concatenate(
                 (y,
-                 self.susceptibilities[i].rg_equations(loops, interaction))
+                 self.susceptibilities[i].rg_equations(couplage=couplage))
             )
         return y
 
@@ -364,47 +374,24 @@ class Susceptibilities(Integrable):
         pass
 
     def __iter__(self):
-        for name in self.susceptibilities_types:
-            yield self.susceptibilities[name]
+        for s in self.susceptibilities:
+            yield s.name, s.susceptibility, s.vertex
 
 
 if __name__ == "__main__":
     import time
-    r = {"tp": 200, "tp2": 20, "Ef": 3000, "Np": 32,
-         "g1": 0.2, "g2": 0.2, "g3": 0.2}
+    Np = 8
+    r = {"tp": 200, "tp2": 20, "Ef": 3000, "Np": Np,
+         "g1": 0.2, "g2": 0.2, "g3": 0.2, "Temperature": 100}
 
-    g = Interaction(r)
-    b = Loops(r)
-    b.get_values(lrg=1, Temperature=10)
-    # print(b.Cooper)
+    g = Interaction(**r)
+    g.initialize()
+    g.rg_equations(lflow=10)
     t1 = time.time()
-    # for _ in range(10):
-    #     g.rg_equations(b)
-    # # input(time.time()-t1)
-
-    # rf = Susceptibility("cdw")
-    # rf.initialize(Np=r["Np"])
-
-    #
-    # y = rf.rg_equations(b, g)
-    # print(rf.name)
-
-    suscs = Susceptibilities()
-    suscs.append_susceptibility_by_name("ssdw")
-    suscs.initialize(Np=32)
-
-    print(len(suscs.susceptibilities_types))
-    for su in suscs:
-        su.rg_equations(b, g)
-        print(su.name)
-        for i in su:
-            print(i)
-        print("================")
-    # input(time.time()-t1)
-
-    # for ty in rf.susceptibilities:
-    #     rf2 = Susceptibility(ty)
-    #     rf2.initialize(Np=r["Np"])
-    #     print(ty)
-    #     y = rf2.rg_equations(b, g)
-    #     print(y)
+    suscs = Susceptibilities(Np=Np).append_all()
+    suscs.initialize()
+    # y = suscs.rg_equations(couplage=g)
+    # suscs.unpack(y)
+    # print(y)
+    for name, s, v in suscs:
+        print(f"{name}: {v}, {s}")

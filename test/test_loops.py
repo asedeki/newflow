@@ -4,20 +4,31 @@ import pathlib
 import numpy as np
 import os
 from random import choice, randint
-path = os.getcwd().split("/")
-if "newflow" in path:
-    path = "/".join(path[:path.index("newflow") + 1])
-else:
-    path = "/".join(path.append("newflow"))
+import asyncio
+import concurrent
+# try:
+from newflow.src.loops import Loops
+# except Exception:
+#     print('in exception import')
+#     path = os.getcwd().split("/")
+#     if "newflow" in path:
+#         path = "/".join(path[:path.index("newflow") + 1])
+#     else:
+#         path = "/".join(path.append("newflow"))
+
+#     sys.path.append(path)
+#     print(sys.path)
+#     from src.loops import Loops
 
 
-sys.path.append(path)
-from src.loops import Loops
+def calc(l):
+    # print(l)
+    return l
 
 
 class TestLoops(unittest.TestCase):
     def setUp(self):
-        parameters = {"tp": 200, "tp2": 20, "Ef": 3000, "Np": 32}
+        parameters = {"tp": 200, "tp2": 20, "Ef": 3000, "Np": 16}
         self.loops = Loops(**parameters)
 
     # def test_init(self):
@@ -25,44 +36,65 @@ class TestLoops(unittest.TestCase):
     #     for k in self.loops.parameters:
     #         print(f"{k}  {self.loops.parameters[k]}")
     # @staticmethod
-    def calcul(self, lrg):
-        lrg = 1
+    async def calcul(self, lrg):
         print(lrg)
-        # parameters = {"tp": 200, "tp2": 20, "Ef": 3000, "Np": 32}
-        # loops = Loops(**parameters)
-        # loops.initialize(Temperature=1, lflow=lrg)
-        # loops()
-        # print(np.sum(self.loops.Cooper))
-        # return np.sum(self.loops.Cooper)
-        return lrg
-
+        parameters = {"tp": 200, "tp2": 20, "Ef": 3000, "Np": 32}
+        loops = Loops(**parameters)
+        loops.initialize(Temperature=1, lflow=lrg)
+        loops()
+        print(np.sum(loops.Cooper))
+        return np.sum(loops.Cooper)
+    def calcul2(self, lrg):
+        print(lrg)
+        parameters = {"tp": 200, "tp2": 20, "Ef": 3000, "Np": 32}
+        loops = Loops(**parameters)
+        loops.initialize(Temperature=1, lflow=lrg)
+        loops()
+        print(np.sum(loops.Cooper))
+        return np.sum(loops.Cooper)
+            
     def test_temps(self):
         import time
-        import concurrent.futures
-        Temperature = 1.0
-        l_rg = 1.0
-        t1 = time.time()
-        with concurrent.futures.ProcessPoolExecutor() as executor:
-            ll = list(np.arange(2))
-            # resuls = [executor.submit(self.calcul, **{"lrg": lrg})
-            #           for lrg in range(5)
-            #           ]
-            # for fgs in concurrent.futures.as_completed(resuls):
-            #     print(fgs.result())
-            ll = [1, 2]
-            exx = executor.map(self.calcul, ll)
-            for resuls in exx:
-                print(resuls)
-        # for r in resuls:
-        #     print(r)
+        import numpy
+        # ll = numpy.linspace(1,50,20)
+        # t1 = time.time()
+        # async def main():
+        #     tasks = []
+        #     for l in ll:
+        #         task = asyncio.ensure_future(self.calcul(l))
+        #         tasks.append(task)
+        #     await asyncio.gather(*tasks)
+        # loop = asyncio.get_event_loop()
+        
+        # try:
+        #     loop.run_until_complete(main())
+        # finally:
+        #     loop.close()
+        # for tt in tasks:
+        #     print(tt.get_values())
+        t1=time.time()
+        # print(f't_loop = {t2 - t1}')
+        
+        def bcalcul(l):
+            parameters = {"tp": 200, "tp2": 20, "Ef": 3000, "Np": 32}
+            loops = Loops(**parameters)
+            loops.initialize(Temperature=1, lflow=l)
+            loops()
+            return l, np.sum(loops.Cooper)
+        ll = numpy.linspace(1,50,10)
+        
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            exx = executor.map(bcalcul, ll)
+        val ={}
+        for l,v in exx:
+            val[l] = v
+        t2=time.time()
+        t_loop = t2 - t1
+        for l in ll:
+            self.assertEqual(val[l]-bcalcul(l)[1],0)
 
-        # for _ in range(50):
-        #     self.loops.initialize(Temperature=Temperature, lflow=l_rg)
-        #     self.loops()
-        print(time.time() - t1)
-        self.assertEqual(8.4, time.time() - t1,
-                         "temps d'execution integrale ancien nouveau")
-
+        # self.assertGreater(time.time() - t2, 2*t_loop)
+        
     def atest_call(self):
         Temperature = 1.0
         l_rg = 1.0
