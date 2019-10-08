@@ -33,19 +33,25 @@ class Interaction(Integrable):
         Class representing the goology modele interaction:
             g1, g2, umklapp g3
     '''
-    loops = None
     _params = ["g1", "g2", "g3", "Np"]
-    parameters = {k: None for k in _params}
 
-    def __init__(self, parameters):
+    def __init__(self, **parameters):
+        self.parameters = {k: None for k in Interaction._params + Loops._params}
         self.parameters.update(
-            utils.best_match_dict(parameters, self._params)
+            utils.best_match_dict(parameters,
+                Interaction._params + Loops._params
+                )
         )
-
+        
         Np = self.parameters["Np"]
+
+        if Np is None:
+            raise ValueError('The number of patches Np must be given')
+        
         self.Ng = Np**3
         self.ndim = (Np, Np, Np)
         self.Neq = 3 * self.Ng
+        self.loops = Loops(**parameters)
 
     def initialize(self, **kwargs):
         self.parameters.update(
@@ -56,9 +62,6 @@ class Interaction(Integrable):
         self.g2 = np.ones(self.ndim, float) * float(self.parameters["g2"])
         self.g3 = np.ones(self.ndim, float) * float(self.parameters["g3"])
         self.loops.initialize(**kwargs)
-
-    def set_loops(self, loops: Loops):
-        self.loops = loops
 
     def initpack(self):
         '''
@@ -122,8 +125,8 @@ class Interaction(Integrable):
         '''
         self.g1 = y[:self.Ng].reshape(self.ndim)
         self.g2 = y[self.Ng:2 * self.Ng].reshape(self.ndim)
-        self.g3 = y[2 * self.Ng:3 * self.Ng].reshape(self.ndim)
-
+        # self.g3 = y[2 * self.Ng:3 * self.Ng].reshape(self.ndim)
+        self.g3 = y[2 * self.Ng:].reshape(self.ndim)
     def rg_equations(self, lflow: float):
         """[summary]
 
