@@ -26,6 +26,7 @@ class Dynamic():
         self.dynamical_sytem = None
         self.ode_integrator = None
         self.rtol = rel_tol
+        self.ode_method = None
 
     def initialize(self, **kwargs):
         """ Description
@@ -55,10 +56,12 @@ class Dynamic():
 
     def __get_integrator(self):
         def rg(l, y):
+            print(f"l={l}")
             dy = self.__derivative(y=y, lflow=l)
             return dy
+
         self.ode_integrator = scipyInt.ode(rg).set_integrator(
-            self.ode_method, rtol=self.rtol)
+            self.ode_method, rtol=self.rtol, )
         # self.ode_integrator.set_f_params(9)
 
     def set_dynamical_system(self,
@@ -74,14 +77,15 @@ class Dynamic():
 
     def __derivative(self, y: np.ndarray,
                      lflow: float) -> np.ndarray:
+
         self.dynamical_sytem.unpack(y)
         dy = self.dynamical_sytem.rg_equations(lflow=lflow)
-
+        # print(f'l = {lflow}')
+        # print(f'mdy = {max(dy)}')
         return dy
 
     def next_value(self, l_ini: float = 0.0,
-                   l_next: float = 100.0,
-                   **kwargs: dict) -> bool:
+                   l_next: float = 100.0) -> bool:
 
         y0 = self.__get_init_value()
         self.ode_integrator.set_initial_value(y0, l_ini)
@@ -89,14 +93,39 @@ class Dynamic():
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
             self.ode_integrator.integrate(l_next)
-        if (self.ode_integrator.successful()):
-            self.dynamical_sytem.unpack(self.ode_integrator.y)
+            if (self.ode_integrator.successful()):
+                self.dynamical_sytem.unpack(self.ode_integrator.y)
 
         return self.ode_integrator.successful()
 
     def next(self, l_ini: float = 0.0,
-             l_next: float = 100.0,
-             **kwargs) -> bool:
+             l_next: float = 100.0) -> bool:
+        def rg(l, y):
+            dy = self.__derivative(y=y, lflow=l)
+            return dy
+
+        def eventsf(l, y):
+            print(f"#l = {l}")
+            print(f"#max = {max(np.abs(y))-1e+7}")
+            return 0 if max(np.abs(y)) > 1e+7 else 1
+
+        y0 = self.__get_init_value()
+        eventsf.terminal = True
+        # eventsf.direction = -1
+
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            sol = scipyInt.solve_ivp(rg, t_span=[l_ini, l_next],
+                                     t_eval=[l_ini, l_next], rtol=self.rtol, y0=y0, events=[eventsf])
+            print(sol.message)
+            test = (sol.success and sol.status == 0)
+            if test:
+                self.dynamical_sytem.unpack(sol.y[:, 1])
+
+        return test
+
+    def next_odeint(self, l_ini: float = 0.0,
+                    l_next: float = 100.0) -> bool:
 
         def rg(y, l):
             dy = self.__derivative(y=y, lflow=l)
@@ -105,6 +134,7 @@ class Dynamic():
         y0 = self.__get_init_value()
         y = scipyInt.odeint(rg, y0, [l_ini, l_next], rtol=self.rtol)
         self.dynamical_sytem.unpack(y[1])
+
     # # Context manager
     # def __enter__(self):
     #     pass

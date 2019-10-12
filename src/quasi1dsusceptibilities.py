@@ -198,29 +198,29 @@ class Susceptibility(Integrable):
         "csdw": {"dim1": 2,
                  "func_ini": None,
                  "rg": rg_equations_csdw,
-                 "type": ["Site_Charge"]},
+                 "type": ["CSDW_0", "CSDW_pi"]},
         "cbdw": {"dim1": 2,
                  "func_ini": None,
                  "rg": rg_equations_cbdw,
-                 "type": ["Bond_Charge"]},
+                 "type": ["CBDW_0", "CBDW_pi"]},
         "ssdw": {"dim1": 2,
                  "func_ini": None,
                  "rg": rg_equations_ssdw,
-                 "type": ["Site_Spin"]},
+                 "type": ["SSDW_0", "SSDW_pi"]},
         "sbdw": {"dim1": 2,
                  "func_ini": None,
                  "rg": rg_equations_sbdw,
-                 "type": ["Bond_Spin"]},
+                 "type": ["SBDW_0", "SBDW_pi"]},
         "supra_triplet": {"dim1": 4,
                           "func_ini": ["", "1*np.sin",
                                        "2*np.cos", "1*np.cos"],
                           "rg": rg_equations_supra_triplet,
-                          "type": ["px", "py", "h", "f"]},
+                          "type": ["ST_px", "ST_py", "ST_h", "ST_f"]},
         "supra_singulet": {"dim1": 5,
                            "func_ini": ["", "1*np.sin", "1*np.cos",
                                         "2*np.sin", "3*np.cos"],
                            "rg": rg_equations_supra_singlet,
-                           "type": ["s", "dxy", "dx2y2", "g", "i"]}
+                           "type": ["SS_s", "SS_dxy", "SS_dx2y2", "SS_g", "SS_i"]}
     }
     SUSCEPTIBILITY_TYPE_KEYS = list(SUSCEPTIBILITY_TYPE.keys())
 
@@ -285,6 +285,19 @@ class Susceptibility(Integrable):
     def rg_equations(self, couplage: Interaction):
         raise NotImplementedError()
 
+    def get_max(self):
+        max_susc = {}
+        i_max = self.susceptibility.argmax()
+        max_susc[self.types[i_max]] = self.susceptibility[i_max]
+        return max_susc
+
+    def get_types_values(self):
+        types_values = {
+            self.types[i]: self.susceptibility[i]
+            for i in range(len(self.types))
+        }
+        return types_values
+
     def __iter__(self):
         for i in range(self.dim1):
             for j in range(self.dim2):
@@ -298,6 +311,7 @@ class Susceptibilities(Integrable):
         self.susceptibilities = []
         self.size = 0
         self.Np = Np
+
         if name_string is not None:
             self.append_susceptibility_by_name(name_string)
 
@@ -373,6 +387,42 @@ class Susceptibilities(Integrable):
     def pack(self):
         pass
 
+    @property
+    def maximum(self) -> dict:
+        """Cette fonction sert a calculer la maximum 
+        pour chaque type de susceptibilite, ainsi la 
+        que la nom d ela susceptibilite dont le max 
+        est absolu. 
+
+        Returns:
+            dict -- [les valeurs des differents maximum avec leur nom]
+        """
+
+        max_susc = {}
+        for susc in self.susceptibilities:
+            max_susc.update(susc.get_max())
+        maxS = max(max_susc.values())
+        absmax = []
+        for k, v in max_susc.items():
+            if v == maxS:
+                absmax.append(k)
+        max_susc["max"] = absmax
+
+        return max_susc
+
+    @property
+    def values(self) -> dict:
+        """Donne les valeurs des susceptibilites.
+
+        Returns:
+            [dict] -- [Les cles du dico representent les noms des susceptibilites]
+        """
+        susc_values = {}
+        for susc in self.susceptibilities:
+            # susc_values[susc.name] = susc.get_types_values()
+            susc_values.update(susc.get_types_values())
+        return susc_values
+
     def __iter__(self):
         for s in self.susceptibilities:
             yield s.name, s.susceptibility, s.vertex
@@ -390,8 +440,8 @@ if __name__ == "__main__":
     t1 = time.time()
     suscs = Susceptibilities(Np=Np).append_all()
     suscs.initialize()
-    # y = suscs.rg_equations(couplage=g)
-    # suscs.unpack(y)
-    # print(y)
-    for name, s, v in suscs:
-        print(f"{name}: {v}, {s}")
+    y = suscs.rg_equations(couplage=g)
+    suscs.unpack(y)
+    print(suscs.maximum)
+    # suscs.set_susc_values()
+    # print(suscs.susc_values)

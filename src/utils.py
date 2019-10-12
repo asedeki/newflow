@@ -31,12 +31,12 @@ def rg_equations_interaction(dg1, dg2, dg3, self_g1, self_g2,
 
     Np = loopsPeierls.shape[0]
     N2 = Np // 2
-    # inds = (-N2, N2)
-    inds = (0, Np)
+    inds = (-N2, N2)
+    #inds = (0, Np)
     for k1 in range(inds[0], inds[1]):
         for k2 in range(inds[0], inds[1]):
             qc = (k1 + k2) % Np
-            for k3 in range(inds[0], inds[1]):
+            for k3 in range(inds[0], 1):
                 qp = (k3 - k2) % Np
                 qpp = (k1 - k3) % Np
                 k4 = (k1 + k2 - k3) % Np
@@ -98,3 +98,10 @@ def rg_equations_interaction(dg1, dg2, dg3, self_g1, self_g2,
                         self_g3[m12] * self_g2[m9]
                         + self_g3[m10] * self_g2[m11]
                     ) * IPP
+
+    for k1 in range(-N2, N2):
+        for k2 in range(-N2, N2):
+            for k3 in range(1, N2):
+                dg1[k1, k2, k3] = dg1[-k1, -k2, -k3]
+                dg2[k1, k2, k3] = dg2[-k1, -k2, -k3]
+                dg3[k1, k2, k3] = dg3[-k1, -k2, -k3]

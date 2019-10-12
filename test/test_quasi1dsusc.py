@@ -14,18 +14,18 @@ try:
     from loops import Loops
     from integrable import Integrable
     from dynamic import Dynamic
-    from integrablesystem import IntegrableQuasi1dSystem
+    from integrablesystem import Quasi1dIntegrableSystem
 except ImportError:
     sys.path.append(path)
     from src.loops import Loops
     from src.integrable import Integrable
     from src.dynamic import Dynamic
-    from src.integrablesystem import IntegrableQuasi1dSystem
+    from src.integrablesystem import Quasi1dIntegrableSystem
     from src.interaction import Interaction
     from src.quasi1dsusceptibilities import Susceptibilities
 
 
-class TestIntegrableQuasi1dSystem(unittest.TestCase):
+class TestQuasi1dIntegrableSystem(unittest.TestCase):
     # def __init__(self):
     #     self.integrable = Intg()
 
@@ -51,7 +51,7 @@ class TestIntegrableQuasi1dSystem(unittest.TestCase):
             "Temperature": 100
         }
 
-        IQ = IntegrableQuasi1dSystem().set_all(
+        IQ = Quasi1dIntegrableSystem().set_all(
             **parameters
         )
         # input(IQ.Neq)

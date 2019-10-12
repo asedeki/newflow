@@ -18,6 +18,7 @@ tata
 lib/
 tmp/
 docs/
+build/
 tobeluga.py
 getbeluga.py
 *.tgz

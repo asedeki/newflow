@@ -15,7 +15,7 @@ from src.interaction import Interaction
 from src.integrable import Integrable
 
 
-class IntegrableQuasi1dSystem(Integrable):
+class Quasi1dIntegrableSystem(Integrable):
     def __init__(self):
         self.interaction = None
         self.susceptibilities = None
@@ -166,8 +166,8 @@ if __name__ == "__main__":
     S.delete_susceptibility_by_name('csdw cbdw singhlet triplet')
     g = Interaction(**parameters)
 
-    # d = IntegrableQuasi1dSystem().set_all(**parameters)
-    d = IntegrableQuasi1dSystem()
+    # d = Quasi1dIntegrableSystem().set_all(**parameters)
+    d = Quasi1dIntegrableSystem()
     d.set_interaction(g)
     d.set_susceptibilities(S)
     d.initialize(Temperature=1e-80)

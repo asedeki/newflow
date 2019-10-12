@@ -24,6 +24,8 @@ sys.path.append(path)
 from src.integrable import Integrable
 from src.loops import Loops
 import src.utils as utils
+import lib.cinteraction as cint
+
 
 # todo reflechir a wrap(), %N ne donne que des valeurs positives
 
@@ -36,18 +38,19 @@ class Interaction(Integrable):
     _params = ["g1", "g2", "g3", "Np"]
 
     def __init__(self, **parameters):
-        self.parameters = {k: None for k in Interaction._params + Loops._params}
+        self.parameters = {
+            k: None for k in Interaction._params + Loops._params}
         self.parameters.update(
             utils.best_match_dict(parameters,
-                Interaction._params + Loops._params
-                )
+                                  Interaction._params + Loops._params
+                                  )
         )
-        
+
         Np = self.parameters["Np"]
 
         if Np is None:
             raise ValueError('The number of patches Np must be given')
-        
+
         self.Ng = Np**3
         self.ndim = (Np, Np, Np)
         self.Neq = 3 * self.Ng
@@ -127,6 +130,7 @@ class Interaction(Integrable):
         self.g2 = y[self.Ng:2 * self.Ng].reshape(self.ndim)
         # self.g3 = y[2 * self.Ng:3 * self.Ng].reshape(self.ndim)
         self.g3 = y[2 * self.Ng:].reshape(self.ndim)
+
     def rg_equations(self, lflow: float):
         """[summary]
 
@@ -162,4 +166,14 @@ class Interaction(Integrable):
         utils.rg_equations_interaction(dg1, dg2, dg3,
                                        self.g1, self.g2, self.g3,
                                        self.loops.Peierls, self.loops.Cooper)
+        return self.pack(dg1, dg2, dg3)
+
+    def rg_equationsO(self, lflow: float):
+        self.loops(lflow=lflow)
+        dg1 = np.zeros(self.ndim, float)
+        dg2 = np.zeros(self.ndim, float)
+        dg3 = np.zeros(self.ndim, float)
+        cint.equations_rg(self.g1, self.g2, self.g3,
+                          self.loops.Peierls, self.loops.Cooper,
+                          dg1, dg2, dg3)
         return self.pack(dg1, dg2, dg3)

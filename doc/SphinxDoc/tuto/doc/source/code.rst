@@ -1,0 +1,5 @@
+Auto
+=====================
+
+.. automodule:: pets
+   :members:
